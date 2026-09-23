@@ -1,0 +1,3 @@
+use crate::provenance::{CalcResult,VerificationStatus};use std::collections::BTreeMap;
+pub fn heat_extraction(mdot:f64,cp:f64,tin:f64,tout:f64)->CalcResult{let mut i=BTreeMap::new();i.insert("mdot".into(),mdot);i.insert("cp".into(),cp);i.insert("tin".into(),tin);i.insert("tout".into(),tout);CalcResult::new("Q_thermal",mdot*cp*(tout-tin),"W","m_dot*Cp*(Tout-Tin)",i,VerificationStatus::Calculated)}
+pub fn pump_power(mdot:f64,dp:f64,rho:f64,eta:f64)->CalcResult{let mut i=BTreeMap::new();i.insert("mdot".into(),mdot);i.insert("delta_p".into(),dp);CalcResult::new("P_pump",mdot*dp/(rho*eta),"W","mdot*deltaP/(rho*eta)",i,VerificationStatus::Calculated)}

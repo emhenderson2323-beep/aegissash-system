@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AegisSash Audit Package",
+  "type": "object",
+  "required": ["schema_version", "timestamp", "dag_master_hash", "nodes", "metadata"],
+  "properties": {
+    "schema_version": {"type": "string"},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "dag_master_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nodes": {"type": "array", "items": {"$ref": "#/definitions/node"}},
+    "metadata": {"type": "object"}
+  },
+  "definitions": {
+    "node": {
+      "type": "object",
+      "required": ["calc_id", "calc_version", "quantity", "value", "unit", "equation", "inputs", "intermediates", "assumptions", "source", "source_revision", "verification_status", "validity_domain", "warnings", "upstream_calculations"],
+      "properties": {
+        "calc_id": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "calc_version": {"type": "string"}, "quantity": {"type": "string"}, "value": {"type": "number"}, "unit": {"type": "string"}, "equation": {"type": "string"},
+        "inputs": {"type": "object", "additionalProperties": {"type": "number"}},
+        "intermediates": {"type": "object", "additionalProperties": {"type": "number"}},
+        "assumptions": {"type": "array", "items": {"type": "string"}}, "source": {"type": "string"}, "source_revision": {"type": "string"},
+        "verification_status": {"enum": ["CALCULATED", "MODELED", "MEASURED", "ESTIMATED", "USER_SUPPLIED", "NOT_ASSESSED"]},
+        "uncertainty": {"type": ["number", "null"]}, "validity_domain": {"type": "string"}, "warnings": {"type": "array", "items": {"type": "string"}}, "upstream_calculations": {"type": "array", "items": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}
+      }
+    }
+  }
+}

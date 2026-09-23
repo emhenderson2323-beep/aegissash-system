@@ -1,0 +1,3 @@
+use crate::provenance::{CalcResult,VerificationStatus};use std::collections::BTreeMap;
+pub fn conductor_resistance(temp:f64,length:f64,width:f64,thickness:f64,contact:f64)->CalcResult {let v=1.68e-8*(1.0+0.00393*(temp-25.0))*length/(width*thickness)+contact;let mut i=BTreeMap::new();i.insert("temperature".into(),temp);i.insert("length".into(),length);i.insert("width".into(),width);i.insert("thickness".into(),thickness);CalcResult::new("R_conductor",v,"ohm","rho25*(1+alpha*(T-25))*L/(w*t)+Rcontact",i,VerificationStatus::Calculated)}
+pub fn mppt_efficiency(irr:f64,nominal:f64)->f64 {let l=(irr/nominal.max(1e-9)).clamp(0.0,1.0);if l<0.2 {0.90+0.5*l}else{0.98-0.02*(1.0-l)}}

@@ -1,0 +1,2 @@
+use crate::provenance::{CalcResult,VerificationStatus};use std::collections::BTreeMap;
+pub fn decay(initial:f64,annual:f64,years:usize)->Vec<CalcResult>{(0..=years).map(|y|{let mut i=BTreeMap::new();i.insert("year".into(),y as f64);i.insert("annual_decay".into(),annual);CalcResult::new("subsystem_retention",initial*(1.0-annual).powi(y as i32),"fraction","initial*(1-annual)^year",i,VerificationStatus::Modeled)}).collect()}

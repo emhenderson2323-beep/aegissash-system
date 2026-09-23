@@ -1,0 +1,3 @@
+use crate::provenance::{CalcResult,VerificationStatus};use std::collections::BTreeMap;
+pub const DISCLAIMER:&str="PRELIMINARY ANALYTICAL SCREENING ONLY. Does not replace physical chamber testing under ASTM E330 / ASTM E1300.";
+pub fn plate_screen(e:f64,t:f64,nu:f64,alpha:f64,q:f64,a:f64,l:f64)->CalcResult{let d=e*t.powi(3)/(12.0*(1.0-nu.powi(2)));let delta=alpha*q*a.powi(4)/d;let mut i=BTreeMap::new();i.insert("E".into(),e);i.insert("thickness".into(),t);i.insert("load".into(),q);let mut r=CalcResult::new("plate_deflection",delta,"m","alpha*q*a^4/D",i,VerificationStatus::Estimated);r.intermediates.insert("rigidity_D".into(),d);r.intermediates.insert("allowable_L_over_175".into(),l/175.0);r.warnings.push(DISCLAIMER.into());r}
