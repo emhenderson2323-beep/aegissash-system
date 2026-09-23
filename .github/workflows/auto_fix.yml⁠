@@ -1,0 +1,32 @@
+name: Auto-Fix and Verify Integrity
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Execute Integrity Verification Script
+        run: |
+          chmod +x scripts/verify_integrity.sh
+          ./scripts/verify_integrity.sh
