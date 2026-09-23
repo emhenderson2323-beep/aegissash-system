@@ -1,14 +1,81 @@
-import { describe, expect, it } from 'vitest';
-
-const wasmModule = await import('../../aegis-core/pkg-node/aegis_core.js');
-
-describe('WASM runtime', () => {
-  it('returns a deterministic SHA-256 calc_id and valid verification status', async () => {
-    const out = wasmModule.calculate_u_factor_wasm(1.8, 2.4, 0.12);
-    const parsed = JSON.parse(out);
-
-    expect(parsed.calc_id).toMatch(/^[a-f0-9]{64}$/);
-    expect(parsed.verification_status).toBe('CALCULATED');
-    expect(parsed.value).toBeGreaterThan(0);
-  });
-});
+:root {
+  --bg: #0b1220;
+  --panel: #121a2b;
+  --panel2: #182235;
+  --border: #243049;
+  --text: #e8eefc;
+  --muted: #8b9bb8;
+  --accent: #3b82f6;
+  --good: #22c55e;
+  --warn: #f59e0b;
+  --bad: #ef4444;
+  --cyan: #22d3ee;
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100%; background: var(--bg); color: var(--text); }
+button, input, select { font: inherit; }
+.app { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+.header {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #152038, #0f1726);
+}
+.brand { display: flex; flex-direction: column; gap: 0.15rem; }
+.brand h1 { margin: 0; font-size: 1.15rem; letter-spacing: 0.02em; }
+.brand span { color: var(--muted); font-size: 0.78rem; }
+.badge-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.badge {
+  font-size: 0.72rem; padding: 0.25rem 0.55rem; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--panel2);
+}
+.badge.ok { border-color: #166534; color: #86efac; background: #052e16; }
+.badge.fail { border-color: #7f1d1d; color: #fca5a5; background: #450a0a; }
+.layout { display: grid; grid-template-columns: 320px 1fr; min-height: 0; }
+@media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+.sidebar { border-right: 1px solid var(--border); background: var(--panel); overflow: auto; padding: 1rem; }
+.main { overflow: auto; padding: 1rem 1.25rem 2rem; }
+.tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.tab {
+  background: var(--panel); border: 1px solid var(--border); color: var(--muted);
+  padding: 0.45rem 0.75rem; border-radius: 0.5rem; cursor: pointer;
+}
+.tab.active { color: white; border-color: var(--accent); background: #1e3a5f; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1rem; }
+.grid-metrics {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem; margin-bottom: 1rem;
+}
+.metric { background: var(--panel2); border: 1px solid var(--border); border-radius: 0.6rem; padding: 0.75rem; }
+.metric .label { color: var(--muted); font-size: 0.72rem; margin-bottom: 0.25rem; }
+.metric .value { font-size: 1.25rem; font-weight: 600; }
+.metric .unit { color: var(--muted); font-size: 0.75rem; margin-left: 0.25rem; }
+.section-title { margin: 0 0 0.75rem; font-size: 0.95rem; }
+.field { margin-bottom: 0.75rem; }
+.field label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.25rem; }
+.field input, .field select {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); border-radius: 0.45rem; padding: 0.45rem 0.55rem;
+}
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+.param-list { font-size: 0.78rem; max-height: 280px; overflow: auto; }
+.param-list div {
+  display: flex; justify-content: space-between; gap: 0.5rem;
+  padding: 0.3rem 0; border-bottom: 1px solid var(--border);
+}
+.param-list span:last-child { color: var(--cyan); }
+.formula {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem;
+  background: #0a1020; border: 1px solid var(--border); border-radius: 0.5rem;
+  padding: 0.75rem; color: #cbd5e1; white-space: pre-wrap;
+}
+.pass { color: var(--good); }
+.fail { color: var(--bad); }
+.btn-row { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+.btn {
+  background: var(--accent); color: white; border: none;
+  border-radius: 0.45rem; padding: 0.5rem 0.85rem; cursor: pointer;
+}
+.btn.secondary { background: var(--panel2); border: 1px solid var(--border); }
+.stack { display: flex; flex-direction: column; gap: 1rem; }
