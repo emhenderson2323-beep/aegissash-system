@@ -1,0 +1,124 @@
+use aegis_core::{
+    fenestration::plate_screen,
+    optical_bounds, run_monte_carlo_tracer, AuditDAG, CalcResult, VerificationStatus,
+};
+use std::collections::BTreeMap;
+
+#[test]
+fn all_verification_status_variants_roundtrip() {
+    let variants = vec![
+        VerificationStatus::Calculated,
+        VerificationStatus::Modeled,
+        VerificationStatus::Measured,
+        VerificationStatus::Estimated,
+        VerificationStatus::UserSupplied,
+        VerificationStatus::NotAssessed,
+    ];
+
+    for v in variants {
+        let json = serde_json::to_string(&v).unwrap();
+        let parsed: VerificationStatus = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed, v);
+    }
+}
+
+#[test]
+fn calc_id_is_deterministic_and_hashlike() {
+    let mut inputs = BTreeMap::new();
+    inputs.insert("n_core".to_string(), 1.52);
+    inputs.insert("n_clad".to_string(), 1.42);
+    let a = CalcResult::new(
+        "f_trap",
+        0.666,
+        "fraction",
+        "sqrt(1-(n_clad/n_core)^2)",
+        inputs.clone(),
+        VerificationStatus::Calculated,
+    );
+    let b = CalcResult::new(
+        "f_trap",
+        0.666,
+        "fraction",
+        "sqrt(1-(n_clad/n_core)^2)",
+        inputs,
+        VerificationStatus::Calculated,
+    );
+
+    assert_eq!(a.calc_id, b.calc_id);
+    assert_eq!(a.calc_id.len(), 64);
+    assert!(a.calc_id.chars().all(|c| c.is_ascii_hexdigit()));
+}
+
+#[test]
+fn timestamp_invariance_and_order_independence() {
+    let x = CalcResult::new(
+        "x",
+        1.0,
+        "W/m2K",
+        "equation",
+        BTreeMap::new(),
+        VerificationStatus::Calculated,
+    );
+    let y = CalcResult::new(
+        "y",
+        2.0,
+        "W/m2K",
+        "equation",
+        BTreeMap::new(),
+        VerificationStatus::Calculated,
+    );
+
+    let dag_a = AuditDAG::new(vec![x.clone(), y.clone()], "2026-01-01T00:00:00Z".to_string());
+    let dag_b = AuditDAG::new(vec![y.clone(), x.clone()], "2026-01-02T00:00:00Z".to_string());
+    assert_eq!(dag_a.dag_master_hash, dag_b.dag_master_hash);
+}
+
+#[test]
+fn physical_mutation_changes_hash() {
+    let a = CalcResult::new(
+        "U_factor",
+        1.8,
+        "W/m2K",
+        "U_sys",
+        BTreeMap::from([("center_u".to_string(), 1.8)]),
+        VerificationStatus::Calculated,
+    );
+    let b = CalcResult::new(
+        "U_factor",
+        2.2,
+        "W/m2K",
+        "U_sys",
+        BTreeMap::from([("center_u".to_string(), 2.2)]),
+        VerificationStatus::Calculated,
+    );
+
+    assert_ne!(a.calc_id, b.calc_id);
+}
+
+#[test]
+fn optical_trap_is_separate_from_system_efficiency() {
+    let bounds = optical_bounds(1.52, 1.42, None);
+    assert_eq!(bounds.trap_fraction.verification_status, VerificationStatus::Calculated);
+    assert!(bounds.lsc_efficiency.is_none());
+
+    let with_efficiency = optical_bounds(1.52, 1.42, Some((0.72, VerificationStatus::Measured)));
+    assert_eq!(with_efficiency.trap_fraction.verification_status, VerificationStatus::Calculated);
+    assert!(with_efficiency.lsc_efficiency.is_some());
+    let lsc = with_efficiency.lsc_efficiency.unwrap();
+    assert_eq!(lsc.verification_status, VerificationStatus::Measured);
+}
+
+#[test]
+fn structural_disclaimer_is_present() {
+    let result = plate_screen(7.0e10, 0.012, 0.22, 0.003, 1_200.0, 1.8, 6_000.0);
+    assert!(result.warnings.iter().any(|warning| {
+        warning.contains("ASTM E330 / ASTM E1300")
+    }));
+}
+
+#[test]
+fn monte_carlo_tracer_returns_segments() {
+    let rays = run_monte_carlo_tracer(10, 1.52, 1.42, 0.012, 4.0);
+    assert_eq!(rays.len(), 10);
+    assert!(rays.iter().all(|ray| ray.start.len() == 3 && ray.end.len() == 3));
+}

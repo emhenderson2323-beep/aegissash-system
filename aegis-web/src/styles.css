@@ -1,0 +1,14 @@
+import { describe, expect, it } from 'vitest';
+
+const wasmModule = await import('../../aegis-core/pkg-node/aegis_core.js');
+
+describe('WASM runtime', () => {
+  it('returns a deterministic SHA-256 calc_id and valid verification status', async () => {
+    const out = wasmModule.calculate_u_factor_wasm(1.8, 2.4, 0.12);
+    const parsed = JSON.parse(out);
+
+    expect(parsed.calc_id).toMatch(/^[a-f0-9]{64}$/);
+    expect(parsed.verification_status).toBe('CALCULATED');
+    expect(parsed.value).toBeGreaterThan(0);
+  });
+});
