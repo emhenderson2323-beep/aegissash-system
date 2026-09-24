@@ -262,8 +262,8 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div className="brand">
-          <h1>AegisSash Super-Intelligence Simulator</h1>
-          <span>Monte Carlo stress · Fault-tolerance · v90</span>
+          <h1>Solastrata™ | BIPV-T Digital Twin</h1>
+          <span>Solastrata™ BIPV-T Active Glazing Systems · v91</span>
         </div>
         <div className="badge-row">
           <span className={`badge ${m.nfrc100Pass ? 'ok' : 'fail'}`}>NFRC 100 {m.nfrc100Pass ? 'PASS' : 'FAIL'}</span>
