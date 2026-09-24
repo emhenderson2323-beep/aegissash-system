@@ -1,6 +1,7 @@
 /**
  * Physical manufacturing + dynamic N-layer stack + CSI submittal
- * Reference: 3'×5' prototype · Docket AEGIS-PROV-2026-01
+ * Reference: 3'×5' prototype · Docket SOLASTRATA-PROV-2026-01
+ * Product: Solastrata™ BIPV-T Active Glazing Systems
  */
 
 export const PROTOTYPE = {
@@ -285,38 +286,29 @@ export function buildCsiSubmittal(opts: {
   bomTotalUsd: number; netPowerWm2: number; tauMaxKPa: number; cteOk: boolean;
 }): CsiSubmittalData {
   return {
-    projectTitle: 'Aegis Sash BIPV-T Glazing System — Architectural Submittal',
+    projectTitle: 'Solastrata™ BIPV-T Glazing System — Architectural Submittal',
     sectionGlazing: '08 80 00 — Glazing',
     sectionCurtainWall: '08 44 00 — Curtain Wall and Glazed Assemblies (BIPV-T)',
-    productName: 'Aegis Sash Luminescent Solar Concentrator Window (BIPV-T)',
+    productName: 'Solastrata™ Luminescent Solar Concentrator Window (BIPV-T)',
     description:
-      'Factory-laminated low-iron glass / doped optical polymer core / low-iron glass unit with edge-mounted PV, perimeter hydronic loop (40/60 PG-water), and dual-cavity thermal-break frame with IP67-potted microinverter.',
+      'Active BIPV-T laminated glazing with LSC polymer core, edge PV, dual-cavity IP67 frame, and hydronic recovery. Digital twin: Solastrata™ BIPV-T Active Glazing Systems.',
     structural: [
-      opts.dpCapable
-        ? 'Design pressure: DP105 (5.02 kPa) per ASTM E1300 uniform load methodology — PASS'
-        : 'Design pressure: review required — DP105 not demonstrated for current stack',
-      `CTE interfacial shear τ_max ≈ ${opts.tauMaxKPa} kPa (${opts.cteOk ? 'within OCA/EVA yield' : 'REVIEW interlayer thickness'})`,
-      'Laminate interlayer: optical clear acrylic OCA or EVA, 0.5–1.0 mm as required for CTE accommodation',
+      `Wind load: ${opts.dpCapable ? 'Capable of DP105 (5.02 kPa) per ASTM E1300 methodology' : 'Review span/thickness for DP105'}`,
+      `CTE interfacial shear τ_max ≈ ${opts.tauMaxKPa} kPa — ${opts.cteOk ? 'within OCA yield' : 'review interlayer'}`,
     ],
     thermalOptical: [
-      `NFRC 100 U-factor: ${opts.uFactor} W/m²·K (target ≤ 0.85)`,
-      `NFRC 200 SHGC: ${opts.shgc} (target 0.20–0.40)`,
-      'Visible transmittance: optical-grade core T_vis > 90% typical with Penrose P3 lattice',
+      `NFRC 100 U-factor: ${opts.uFactor} W/m²·K`,
+      `NFRC 200 SHGC: ${opts.shgc}`,
     ],
     electrical: [
-      `Net power density (after circulator parasitic): ${opts.netPowerWm2} W/m²`,
-      opts.nec690
-        ? 'NEC Article 690 rapid shutdown: compliant topology (≤30 V within 30 s)'
-        : 'NEC 690: inverter topology requires review',
-      'Frame electronics: IP67 potted upper chamber; SunSpec RS-485 telemetry option',
-      'Edge PV: GaAs or c-Si strips with 16 AWG PTFE DC bus and 10 A fuse',
+      `Net power density ≈ ${opts.netPowerWm2} W/m² (after pump parasitic)`,
+      `NEC 690 rapid shutdown: ${opts.nec690 ? 'Compliant path' : 'Verify'}`,
+      'IP67 potted upper chamber microinverter + RS-485 telemetry',
     ],
     warranty: [
-      'Prototype BOM estimate is not a commercial quotation; final pricing under project agreement',
-      'Workmanship warranty: 5 years typical on laminate seal and frame (project-specific)',
-      'Power output warranty: linear to ≥80% nameplate at year 25 subject to degradation model',
-      `Itemized prototype BOM total (3′×5′ reference): $${opts.bomTotalUsd} USD`,
+      'Materials and workmanship per manufacturer schedule',
+      'Edge PV power warranty path consistent with 0.5%/yr degradation model',
     ],
-    bomSummary: `Reference unit BOM $${opts.bomTotalUsd} (see Physical BOM tab for line items and suppliers).`,
+    bomSummary: `Prototype BOM total ≈ $${opts.bomTotalUsd} (indicative)`,
   };
 }
