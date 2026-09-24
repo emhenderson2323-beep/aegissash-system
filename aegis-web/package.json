@@ -1,8 +1,9 @@
 {
-  "name": "aegis-web",
+  "name": "solastrata-system",
   "private": true,
-  "version": "84.0.0",
+  "version": "91.0.0",
   "type": "module",
+  "description": "Solastrata™ BIPV-T Active Glazing Systems — digital twin & structural fenestration engine",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
