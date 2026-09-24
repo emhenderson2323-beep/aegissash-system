@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AegisSashSystemSpecification",
+  "type": "object",
+  "properties": {
+    "optical_matrix": {
+      "type": "object",
+      "properties": {
+        "base_polymer": { "type": "string", "enum": ["PMMA", "Zeonex_150ppm", "Polycarbonate", "Glass"] },
+        "substrate_thickness_mm": { "type": "number", "minimum": 1.0, "maximum": 10.0 },
+        "dye_dopant": { "type": "string", "enum": ["None", "Lumogen_Yellow_083", "Lumogen_Red_305"] },
+        "dye_concentration_ppm": { "type": "number", "minimum": 0.0, "maximum": 500.0 }
+      },
+      "required": ["base_polymer", "substrate_thickness_mm", "dye_dopant", "dye_concentration_ppm"]
+    },
+    "quantum_dots": {
+      "type": "object",
+      "properties": {
+        "core_material": { "type": "string", "enum": ["InP", "CuInS2", "CdSe", "CsPbBr3"] },
+        "shell_material": { "type": "string", "enum": ["ZnS", "ZnSe", "Dual_ZnS_ZnSe"] },
+        "diameter_nm": { "type": "number", "minimum": 1.0, "maximum": 10.0 },
+        "concentration_ppm": { "type": "number", "minimum": 0.0, "maximum": 2000.0 }
+      },
+      "required": ["core_material", "shell_material", "diameter_nm", "concentration_ppm"]
+    },
+    "photonic_crystal": {
+      "type": "object",
+      "properties": {
+        "lattice_geometry": { "type": "string", "enum": ["Square", "Hexagonal", "Penrose_P3", "E8_Projection"] },
+        "pitch_nm": { "type": "number", "minimum": 200.0, "maximum": 1200.0 },
+        "fill_factor": { "type": "number", "minimum": 0.1, "maximum": 0.45 }
+      },
+      "required": ["lattice_geometry", "pitch_nm", "fill_factor"]
+    },
+    "electrical_hydronic": {
+      "type": "object",
+      "properties": {
+        "pv_material": { "type": "string", "enum": ["c-Si", "GaAs", "GaN", "SiC", "Perovskite"] },
+        "channel_diameter_mm": { "type": "number", "minimum": 2.0, "maximum": 12.0 },
+        "mass_flow_rate_kg_s": { "type": "number", "minimum": 0.01, "maximum": 0.50 },
+        "coolant_fluid": { "type": "string", "enum": ["Pure_H2O", "Ethylene_Glycol_50_50", "Nano_Fluid"] },
+        "inverter_topology": { "type": "string", "enum": ["Central_Inverter", "Microinverter", "Buck_Boost_DC_DC"] },
+        "cavity_gas": { "type": "string", "enum": ["Air", "Argon", "Krypton"] },
+        "low_e_emissivity": { "type": "number", "minimum": 0.02, "maximum": 0.84 }
+      },
+      "required": ["pv_material", "channel_diameter_mm", "mass_flow_rate_kg_s"]
+    },
+    "G_solar": { "type": "number", "minimum": 0, "maximum": 1400 },
+    "T_ambient": { "type": "number", "minimum": -40, "maximum": 60 }
+  },
+  "required": ["optical_matrix", "quantum_dots", "photonic_crystal", "electrical_hydronic"]
+}
