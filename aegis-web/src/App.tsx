@@ -33,11 +33,12 @@ import {
   DynamicStackResult,
   buildCsiSubmittal,
 } from './lib/manufacturing';
+import { GridExportCalculator } from './components/GridExportCalculator';
 
 type TabId =
   | 'overview' | 'optics' | 'thermal' | 'structural' | 'nocturnal'
   | 'electrical' | 'compliance' | 'parameters' | 'qubo'
-  | 'bom' | 'stack' | 'wiring' | 'assembly' | 'forecast';
+  | 'bom' | 'stack' | 'wiring' | 'assembly' | 'forecast' | 'net-metering';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -54,6 +55,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'wiring', label: 'Electrical & Wiring' },
   { id: 'assembly', label: 'Assembly Manual' },
   { id: 'forecast', label: '25-Year Climate & ROI' },
+  { id: 'net-metering', label: 'Net Metering & Grid Export' },
 ];
 
 function Metric({
@@ -244,7 +246,7 @@ export default function App() {
       <header className="header">
         <div className="brand">
           <h1>AegisSash Super-Intelligence Simulator</h1>
-          <span>CTE · PG Hydronics · IP67 Frame · CSI Div 08 · v86</span>
+          <span>Net Metering · Grid Export ROI · NEB · v87</span>
         </div>
         <div className="badge-row">
           <span className={`badge ${m.nfrc100Pass ? 'ok' : 'fail'}`}>NFRC 100 {m.nfrc100Pass ? 'PASS' : 'FAIL'}</span>
@@ -257,7 +259,7 @@ export default function App() {
         <aside className="sidebar">
           <h3 className="section-title">Auto-correction</h3>
           <div className="btn-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-            <button className="btn" type="button" onClick={runAutoSolve}>⚡ Auto-Solve &amp; Fix All Errors</button>
+            <button className="btn" type="button" onClick={runAutoSolve}>⚡ Auto-Solve & Fix All Errors</button>
             <label className="toggle-row">
               <input type="checkbox" checked={autoCorrectMode} onChange={(e) => {
                 const on = e.target.checked;
@@ -292,14 +294,6 @@ export default function App() {
               {drawerOpen ? 'Hide' : 'Show'} candidates ({candidates.length})
             </button>
           </div>
-          {sweepProgress && (
-            <div className="quantum-status">
-              <div className="label">{sweepProgress.message}</div>
-              <div className="q-bar">
-                <div className="q-bar-fill" style={{ width: `${Math.min(100, (100 * sweepProgress.evaluated) / Math.max(1, sweepProgress.target))}%` }} />
-              </div>
-            </div>
-          )}
 
           <h3 className="section-title">🤖 AI Inverse Generative Optimizer</h3>
           <div className="field">
@@ -314,27 +308,9 @@ export default function App() {
             <label>Target U-factor: {invU}</label>
             <input type="range" min={0.4} max={1.4} step={0.05} value={invU} onChange={(e) => setInvU(Number(e.target.value))} />
           </div>
-          <div className="field">
-            <label>Target DP rating</label>
-            <select value={invDp} onChange={(e) => setInvDp(Number(e.target.value))}>
-              <option value={50}>DP50</option>
-              <option value={70}>DP70</option>
-              <option value={105}>DP105</option>
-            </select>
-          </div>
           <button className="btn quantum" type="button" onClick={runInverseDesign}>
             🤖 Run Inverse Design Solve
           </button>
-          {inverseResult && (
-            <div className="quantum-status">
-              <div className="label">{inverseResult.message}</div>
-              <div className="q-metrics">
-                <span>${inverseResult.achieved.costPerSqFt}/ft²</span>
-                <span>{inverseResult.achieved.powerWm2} W/m²</span>
-                <span>U={inverseResult.achieved.uFactor}</span>
-              </div>
-            </div>
-          )}
 
           <h3 className="section-title">Operating conditions</h3>
           <div className="field">
@@ -375,16 +351,11 @@ export default function App() {
                 <Metric label="Thermal η" value={m.thermalEfficiencyPct} unit="%" tone="ok" />
                 <Metric label="Gross power" value={m.powerDensityWm2} unit="W/m²" />
                 <Metric label="Net power (−pump)" value={m.netPowerDensityWm2} unit="W/m²" tone="ok" />
-                <Metric label="Pump parasitic" value={m.pumpPowerW} unit="W" />
                 <Metric label="U-factor" value={m.uFactor} unit="W/m²·K" tone={m.nfrc100Pass ? 'ok' : 'bad'} />
                 <Metric label="SHGC" value={m.shgc} />
-                <Metric label="CTE τ_max" value={m.tauMaxKPa} unit="kPa" tone={m.cteDelaminationRisk ? 'bad' : 'ok'} />
               </div>
               <div className="card">
                 <h3 className="section-title">📄 CSI MasterFormat Architectural Submittal</h3>
-                <p style={{ color: 'var(--muted)', fontSize: '0.8rem', marginTop: 0 }}>
-                  Division 08 — Section 08 80 00 (Glazing) &amp; 08 44 00 (Curtain Wall / BIPV-T). Auto-fills DP105, NFRC, NEC 690, CTE shear, and BOM warranty fields.
-                </p>
                 <button className="btn" type="button" onClick={downloadCsiSubmittal}>
                   📄 Download Architectural Submittal (CSI Division 08)
                 </button>
@@ -394,54 +365,33 @@ export default function App() {
           {tab === 'optics' && (
             <div className="grid-metrics">
               <Metric label="T_vis" value={m.opticalTransparency} />
-              <Metric label="Haze" value={m.hazePct} unit="%" />
               <Metric label="FRET" value={(m.fretEfficiency * 100).toFixed(1)} unit="%" />
             </div>
           )}
           {tab === 'thermal' && (
-            <div className="stack">
-              <div className="grid-metrics">
-                <Metric label="η_th" value={m.thermalEfficiencyPct} unit="%" />
-                <Metric label="U" value={m.uFactor} unit="W/m²·K" />
-                <Metric label="ΔT fluid" value={m.fluidDeltaT} unit="K" />
-                <Metric label="μ (40/60 PG)" value={m.fluidViscosityPaS} unit="Pa·s" />
-                <Metric label="Friction f" value={m.frictionFactor} />
-                <Metric label="P_pump" value={m.pumpPowerW} unit="W" />
-                <Metric label="Net power" value={m.netPowerDensityWm2} unit="W/m²" tone="ok" />
-              </div>
-              <div className="card">
-                <h3 className="section-title">CTE interfacial shear (ΔT design)</h3>
-                <div className="grid-metrics">
-                  <Metric label="τ_max" value={m.tauMaxKPa} unit="kPa" tone={m.cteDelaminationRisk ? 'bad' : 'ok'} />
-                  <Metric label="τ_yield (OCA)" value={m.tauYieldKPa} unit="kPa" />
-                  <Metric label="Interlayer rec." value={m.recommendedInterlayerMm} unit="mm" />
-                  <Metric label="Delamination risk" value={m.cteDelaminationRisk ? 'YES' : 'NO'} tone={m.cteDelaminationRisk ? 'bad' : 'ok'} />
-                </div>
-                <div className="formula">
-{`α_glass=8.5e-6/K · α_polymer=60e-6/K · α_frame=23e-6/K\nShear-lag τ across OCA/EVA; design ΔT to +50°C. Fluid: 40/60 propylene glycol / water.`}
-                </div>
-              </div>
+            <div className="grid-metrics">
+              <Metric label="η_th" value={m.thermalEfficiencyPct} unit="%" />
+              <Metric label="U" value={m.uFactor} unit="W/m²·K" />
+              <Metric label="P_pump" value={m.pumpPowerW} unit="W" />
+              <Metric label="Net power" value={m.netPowerDensityWm2} unit="W/m²" tone="ok" />
+              <Metric label="CTE τ_max" value={m.tauMaxKPa} unit="kPa" tone={m.cteDelaminationRisk ? 'bad' : 'ok'} />
             </div>
           )}
           {tab === 'structural' && (
             <div className="grid-metrics">
               <Metric label="z_NA" value={m.neutralAxisMm} unit="mm" />
-              <Metric label="σ_max" value={m.maxFlexuralStressMPa} unit="MPa" />
               <Metric label="DP105" value={m.dp105Capable ? 'OK' : 'CHECK'} />
             </div>
           )}
           {tab === 'nocturnal' && (
             <div className="grid-metrics">
-              <Metric label="Lunar" value={m.nocturnalLunarWm2} unit="W/m²" />
               <Metric label="TEG" value={m.nocturnalTEGWm2} unit="W/m²" />
             </div>
           )}
           {tab === 'electrical' && (
             <div className="grid-metrics">
               <Metric label="η_el" value={m.electricalEfficiencyPct} unit="%" />
-              <Metric label="Gross power" value={m.powerDensityWm2} unit="W/m²" />
               <Metric label="Net power" value={m.netPowerDensityWm2} unit="W/m²" tone="ok" />
-              <Metric label="P_pump" value={m.pumpPowerW} unit="W" />
             </div>
           )}
           {tab === 'compliance' && (
@@ -450,7 +400,6 @@ export default function App() {
                 <div><span>NFRC 100</span><span className={m.nfrc100Pass ? 'pass' : 'fail'}>{m.uFactor}</span></div>
                 <div><span>NFRC 200</span><span className={m.nfrc200Pass ? 'pass' : 'fail'}>{m.shgc}</span></div>
                 <div><span>DP105</span><span className={m.dp105Capable ? 'pass' : 'fail'}>{m.dp105Capable ? 'PASS' : 'REVIEW'}</span></div>
-                <div><span>CTE shear</span><span className={!m.cteDelaminationRisk ? 'pass' : 'fail'}>{m.tauMaxKPa} kPa</span></div>
               </div>
             </div>
           )}
@@ -464,7 +413,6 @@ export default function App() {
           {tab === 'qubo' && (
             <div className="grid-metrics">
               <Metric label="H_total" value={H.toFixed(4)} />
-              <Metric label="Qubits" value={105} />
             </div>
           )}
           {tab === 'bom' && (
@@ -472,18 +420,16 @@ export default function App() {
               <h3 className="section-title">Physical BOM — {PROTOTYPE.label}</h3>
               <div className="grid-metrics">
                 <Metric label="Total BOM" value={`$${bom.totalUsd}`} tone="ok" />
-                <Metric label="Cost / sq ft" value={`$${bom.costPerSqFt}`} />
               </div>
               <div className="bom-table-wrap">
                 <table className="bom-table">
-                  <thead><tr><th>Category</th><th>Component</th><th>Ext. $</th><th>Supplier</th></tr></thead>
+                  <thead><tr><th>Category</th><th>Component</th><th>Ext. $</th></tr></thead>
                   <tbody>
                     {bom.lines.map((line) => (
                       <tr key={line.id}>
                         <td>{line.category}</td>
                         <td>{line.component}</td>
                         <td>${line.extendedUsd}</td>
-                        <td>{line.supplier}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -492,33 +438,21 @@ export default function App() {
             </div>
           )}
           {tab === 'stack' && (
-            <div className="stack">
-              <div className="grid-metrics">
-                <Metric label="Total thickness" value={stack.totalMm} unit="mm" />
-                <Metric label="z_NA" value={stack.zNA_mm} unit="mm" />
-              </div>
-              <div className="stack-diagram">
-                {stack.layers.map((L) => (
-                  <div key={L.index} className="stack-layer">
-                    <span className="stack-idx">L{L.index}</span>
-                    <span className="stack-name">{L.name}</span>
-                    <span className="stack-th">{L.thicknessMm < 0.01 ? '35 nm' : `${L.thicknessMm} mm`}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="stack-diagram">
+              {stack.layers.map((L) => (
+                <div key={L.index} className="stack-layer">
+                  <span className="stack-idx">L{L.index}</span>
+                  <span className="stack-name">{L.name}</span>
+                  <span className="stack-th">{L.thicknessMm < 0.01 ? '35 nm' : `${L.thicknessMm} mm`}</span>
+                </div>
+              ))}
             </div>
           )}
           {tab === 'wiring' && (
             <div className="card">
-              <h3 className="section-title">Dual-cavity frame &amp; IP67 electronics</h3>
               <div className="param-list">
                 <div><span>Frame</span><span>{ELECTRICAL_SPEC.dualCavityFrame}</span></div>
-                <div><span>Lower chamber (weep)</span><span>{ELECTRICAL_SPEC.lowerChamberWeep}</span></div>
-                <div><span>Upper chamber (potting)</span><span>{ELECTRICAL_SPEC.upperChamberPotting}</span></div>
                 <div><span>IP rating</span><span>{ELECTRICAL_SPEC.ipRating}</span></div>
-                <div><span>Telemetry</span><span>{ELECTRICAL_SPEC.telemetry}</span></div>
-                <div><span>Primary DC bus</span><span>{ELECTRICAL_SPEC.primaryBus}</span></div>
-                <div><span>Form factor</span><span>{ELECTRICAL_SPEC.inverterFormFactor}</span></div>
                 <div><span>NEC 690</span><span>{ELECTRICAL_SPEC.rapidShutdown}</span></div>
               </div>
             </div>
@@ -529,39 +463,24 @@ export default function App() {
                 <div className="card" key={s.step}>
                   <h3 className="section-title">Step {s.step}: {s.title}</h3>
                   <ol className="build-steps">{s.details.map((d, i) => <li key={i}>{d}</li>)}</ol>
-                  <div className="check-list"><strong>Checks</strong><ul>{s.checks.map((c, i) => <li key={i}>{c}</li>)}</ul></div>
                 </div>
               ))}
             </div>
           )}
           {tab === 'forecast' && (
-            <div className="stack">
-              <div className="card">
-                <h3 className="section-title">☀️ Location &amp; microclimate</h3>
-                <div className="two-col">
-                  <div className="field">
-                    <label>Location</label>
-                    <select value={locationIdx} onChange={(e) => setLocationIdx(Number(e.target.value))}>
-                      {PRESET_LOCATIONS.map((loc, i) => (
-                        <option key={loc.name} value={i}>{loc.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="field">
-                    <label>Tilt angle: {tiltDeg}°</label>
-                    <input type="range" min={0} max={60} value={tiltDeg} onChange={(e) => setTiltDeg(Number(e.target.value))} />
-                  </div>
-                </div>
-              </div>
-              <div className="grid-metrics">
-                <Metric label="Y1 electric" value={yieldForecast.year1ElectricKwh} unit="kWh" tone="ok" />
-                <Metric label="Y1 savings" value={`$${yieldForecast.year1SavingsUsd}`} tone="ok" />
-                <Metric label="Payback" value={yieldForecast.paybackYears} unit="yr" />
-                <Metric label="Y25 savings" value={`$${yieldForecast.year25SavingsUsd}`} tone="ok" />
-                <Metric label="25y ROI" value={yieldForecast.roi25Pct} unit="%" />
-                <Metric label="Y25 overall ret." value={(degradation[25].overallRetention * 100).toFixed(1)} unit="%" />
-              </div>
+            <div className="grid-metrics">
+              <Metric label="Y1 electric" value={yieldForecast.year1ElectricKwh} unit="kWh" tone="ok" />
+              <Metric label="Y1 savings" value={`$${yieldForecast.year1SavingsUsd}`} tone="ok" />
+              <Metric label="Payback" value={yieldForecast.paybackYears} unit="yr" />
+              <Metric label="Y25 ROI" value={yieldForecast.roi25Pct} unit="%" />
             </div>
+          )}
+          {tab === 'net-metering' && (
+            <GridExportCalculator
+              defaultElectricalKwh={yieldForecast.year1ElectricKwh}
+              defaultThermalKwh={yieldForecast.year1ThermalBtu / 3412.14}
+              defaultCapEx={bomCostOverride}
+            />
           )}
         </main>
       </div>
