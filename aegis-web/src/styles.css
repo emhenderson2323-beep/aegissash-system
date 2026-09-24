@@ -89,3 +89,23 @@ button, input, select { font: inherit; }
 }
 .correction-log ul { margin: 0.35rem 0 0; padding-left: 1.1rem; color: var(--cyan); }
 .correction-log .label { color: var(--muted); margin-bottom: 0.25rem; }
+.bom-table-wrap { overflow: auto; max-height: 480px; margin-top: 0.75rem; }
+.bom-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+.bom-table th, .bom-table td {
+  border-bottom: 1px solid var(--border); padding: 0.45rem 0.4rem;
+  text-align: left; vertical-align: top;
+}
+.bom-table th { color: var(--muted); position: sticky; top: 0; background: var(--panel); }
+.bom-table .muted { color: var(--muted); font-size: 0.68rem; }
+.stack-diagram { display: flex; flex-direction: column; gap: 3px; }
+.stack-layer {
+  display: grid; grid-template-columns: 2rem 1fr auto; gap: 0.5rem;
+  align-items: center; background: var(--panel2); border: 1px solid var(--border);
+  border-radius: 0.35rem; padding: 0.35rem 0.5rem; font-size: 0.75rem;
+}
+.stack-idx { color: var(--cyan); font-weight: 600; }
+.stack-name { color: var(--text); }
+.stack-th { color: var(--muted); font-family: ui-monospace, monospace; }
+.build-steps { margin: 0 0 0.75rem; padding-left: 1.2rem; font-size: 0.82rem; line-height: 1.45; }
+.check-list { font-size: 0.78rem; color: var(--muted); }
+.check-list ul { margin: 0.25rem 0 0; padding-left: 1.2rem; color: var(--cyan); }
