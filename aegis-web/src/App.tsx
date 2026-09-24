@@ -7,7 +7,6 @@ import {
   buildLaminateStack,
   computeNeutralAxis,
   simulateAnnualYield,
-  simulateDegradation25y,
   PRESET_LOCATIONS,
 } from './lib/engine';
 import {
@@ -35,11 +34,16 @@ import {
 } from './lib/manufacturing';
 import { GridExportCalculator } from './components/GridExportCalculator';
 import { FrameOptimizerPanel } from './components/FrameOptimizerPanel';
+import { UniversalAiAdvisorTab } from './components/UniversalAiAdvisorTab';
+import type { SimulationContext } from './lib/universalAiService';
+import { optimizeFrameMaterial } from './lib/frameOptimizer';
+import { calculateNetMeteringROI } from './netMeteringEngine';
+import { DEFAULT_NET_METERING_INPUTS } from './types/netMetering';
 
 type TabId =
   | 'overview' | 'optics' | 'thermal' | 'structural' | 'nocturnal'
   | 'electrical' | 'compliance' | 'parameters' | 'qubo'
-  | 'bom' | 'stack' | 'wiring' | 'assembly' | 'forecast' | 'net-metering' | 'frame';
+  | 'bom' | 'stack' | 'wiring' | 'assembly' | 'forecast' | 'net-metering' | 'frame' | 'ai-advisor';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -58,6 +62,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'forecast', label: '25-Year Climate & ROI' },
   { id: 'net-metering', label: 'Net Metering & Grid Export' },
   { id: 'frame', label: 'Frame Optimizer' },
+  { id: 'ai-advisor', label: '🤖 AI Advisor' },
 ];
 
 function Metric({
@@ -126,6 +131,50 @@ export default function App() {
     [location, tiltDeg, m.electricalEfficiencyPct, m.thermalEfficiencyPct, bomCostOverride],
   );
 
+  const aiContext: SimulationContext = useMemo(() => {
+    const frame = optimizeFrameMaterial({
+      targetCostPerSqFt: invCost,
+      targetUFactor: invU,
+      targetDpRating: invDp,
+      climateDeltaT: 50,
+      panelWidthM: params.panelWidthM,
+      panelHeightM: params.panelHeightM,
+      areaSqFt: Math.max(1, params.panelWidthM * params.panelHeightM * 10.764),
+      glassStackCostUsd: Math.max(400, bom.totalUsd * 0.65),
+      forcedMaterialId: forcedFrameId,
+    });
+    const nm = calculateNetMeteringROI({
+      ...DEFAULT_NET_METERING_INPUTS,
+      annualElectricalGenkWh: yieldForecast.year1ElectricKwh,
+      annualThermalGenkWh: yieldForecast.year1ThermalBtu / 3412.14,
+      systemCapEx: bomCostOverride,
+    });
+    return {
+      vlt: m.opticalTransparency,
+      hazePct: m.hazePct,
+      fretPct: Math.round(m.fretEfficiency * 1000) / 10,
+      uFactor: m.uFactor,
+      shgc: m.shgc,
+      electricalEtaPct: m.electricalEfficiencyPct,
+      thermalEtaPct: m.thermalEfficiencyPct,
+      netPowerWm2: m.netPowerDensityWm2,
+      year1ElectricKwh: yieldForecast.year1ElectricKwh,
+      year1ThermalKwh: Math.round(yieldForecast.year1ThermalBtu / 3412.14),
+      nfrc100Pass: m.nfrc100Pass,
+      nfrc200Pass: m.nfrc200Pass,
+      dp105Ok: m.dp105Capable,
+      frameMaterialName: frame.selected.material.name,
+      frameCostPerFt: frame.selected.material.costPerLinearFt,
+      frameCteMatchPct: Math.round(frame.selected.cteMatchScore * 100),
+      simplePaybackYears: nm.simplePaybackYears,
+      npv: nm.npv,
+      lcoe: nm.lcoePerkWh,
+      stackSummary: stack.layers.map((L) => L.name).join(' / '),
+      cavityGas: params.cavityGas,
+      pvMaterial: params.pvMaterial,
+    };
+  }, [m, yieldForecast, bom, bomCostOverride, params, invCost, invU, invDp, forcedFrameId, stack]);
+
   const applyParams = useCallback(
     (next: DesignParams) => setParams(autoCorrectMode ? clampToCompliantBand(next) : next),
     [autoCorrectMode],
@@ -187,41 +236,12 @@ export default function App() {
     setBomCostOverride(result.stack.bomCostUsd);
   };
 
-  const downloadCsiSubmittal = () => {
-    const csi = buildCsiSubmittal({
-      uFactor: m.uFactor,
-      shgc: m.shgc,
-      dpCapable: m.dp105Capable,
-      nec690: m.nec690Pass,
-      bomTotalUsd: bom.totalUsd,
-      netPowerWm2: m.netPowerDensityWm2,
-      tauMaxKPa: m.tauMaxKPa,
-      cteOk: !m.cteDelaminationRisk,
-    });
-    const lines = [
-      csi.projectTitle,
-      csi.sectionGlazing,
-      csi.sectionCurtainWall,
-      ...csi.structural,
-      ...csi.thermalOptical,
-      ...csi.electrical,
-      ...csi.warranty,
-    ];
-    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'AegisSash_CSI_Division08_Submittal.txt';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="app">
       <header className="header">
         <div className="brand">
           <h1>AegisSash Super-Intelligence Simulator</h1>
-          <span>Unconstrained Frame Optimizer · Multi-material · v88</span>
+          <span>AI Advisor · Multi-provider · Offline rules · v89</span>
         </div>
         <div className="badge-row">
           <span className={`badge ${m.nfrc100Pass ? 'ok' : 'fail'}`}>NFRC 100 {m.nfrc100Pass ? 'PASS' : 'FAIL'}</span>
@@ -237,10 +257,6 @@ export default function App() {
           <div className="field">
             <label>Target cost ($/sq ft): {invCost}</label>
             <input type="range" min={40} max={200} step={5} value={invCost} onChange={(e) => setInvCost(Number(e.target.value))} />
-          </div>
-          <div className="field">
-            <label>Target power (W/m²): {invPower}</label>
-            <input type="range" min={20} max={120} step={5} value={invPower} onChange={(e) => setInvPower(Number(e.target.value))} />
           </div>
           <div className="field">
             <label>Target U-factor: {invU}</label>
@@ -261,9 +277,6 @@ export default function App() {
             <div className="quantum-status">
               <div className="label">{inverseResult.message}</div>
             </div>
-          )}
-          {forcedFrameId && (
-            <div className="formula">Frame override: {forcedFrameId}</div>
           )}
           <h3 className="section-title">Operating conditions</h3>
           <div className="field">
@@ -303,7 +316,6 @@ export default function App() {
             <div className="grid-metrics">
               <Metric label="η_th" value={m.thermalEfficiencyPct} unit="%" />
               <Metric label="U" value={m.uFactor} unit="W/m²·K" />
-              <Metric label="CTE τ_max" value={m.tauMaxKPa} unit="kPa" />
             </div>
           )}
           {tab === 'structural' && (
@@ -396,6 +408,9 @@ export default function App() {
               glassStackCostUsd={Math.max(400, bom.totalUsd * 0.65)}
               onSelectMaterial={setForcedFrameId}
             />
+          )}
+          {tab === 'ai-advisor' && (
+            <UniversalAiAdvisorTab context={aiContext} />
           )}
         </main>
       </div>
