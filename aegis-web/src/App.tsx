@@ -13,10 +13,18 @@ import {
   getCompliantDefaults,
   CorrectionLog,
 } from './utils/solver';
+import {
+  PROTOTYPE,
+  buildBom,
+  glassStackLayers,
+  ELECTRICAL_SPEC,
+  ASSEMBLY_STEPS,
+} from './lib/manufacturing';
 
 type TabId =
   | 'overview' | 'optics' | 'thermal' | 'structural' | 'nocturnal'
-  | 'electrical' | 'compliance' | 'parameters' | 'qubo';
+  | 'electrical' | 'compliance' | 'parameters' | 'qubo'
+  | 'bom' | 'stack' | 'wiring' | 'assembly';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -28,6 +36,10 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'compliance', label: 'Compliance' },
   { id: 'parameters', label: '22 Parameters' },
   { id: 'qubo', label: 'QUBO / FNO' },
+  { id: 'bom', label: 'Physical BOM' },
+  { id: 'stack', label: 'Glass Stack & Layup' },
+  { id: 'wiring', label: 'Electrical & Wiring' },
+  { id: 'assembly', label: 'Assembly Manual' },
 ];
 
 function Metric({
@@ -62,6 +74,11 @@ export default function App() {
     const layers = buildLaminateStack(params);
     return { layers, ...computeNeutralAxis(layers) };
   }, [params]);
+  const bom = useMemo(() => buildBom(), []);
+  const stack = useMemo(
+    () => glassStackLayers(params.substrateThicknessMm),
+    [params.substrateThicknessMm],
+  );
 
   const applyParams = useCallback(
     (next: DesignParams) => setParams(autoCorrectMode ? clampToCompliantBand(next) : next),
@@ -96,7 +113,7 @@ export default function App() {
         <aside className="sidebar">
           <h3 className="section-title">Auto-correction</h3>
           <div className="btn-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-            <button className="btn" type="button" onClick={runAutoSolve}>⚡ Auto-Solve & Fix All Errors</button>
+            <button className="btn" type="button" onClick={runAutoSolve}>⚡ Auto-Solve &amp; Fix All Errors</button>
             <label className="toggle-row">
               <input type="checkbox" checked={autoCorrectMode} onChange={(e) => {
                 const on = e.target.checked;
@@ -264,7 +281,7 @@ export default function App() {
                 <div><span>UL 61730</span><span className={m.ul61730Pass ? 'pass' : 'fail'}>{m.ul61730Pass ? 'PASS' : 'FAIL'}</span></div>
                 <div><span>IEEE 1547</span><span className={m.ieee1547Pass ? 'pass' : 'fail'}>{m.ieee1547Pass ? 'PASS' : 'FAIL'}</span></div>
               </div>
-              <div className="btn-row"><button className="btn" type="button" onClick={runAutoSolve}>⚡ Auto-Solve & Fix All Errors</button></div>
+              <div className="btn-row"><button className="btn" type="button" onClick={runAutoSolve}>⚡ Auto-Solve &amp; Fix All Errors</button></div>
             </div>
           )}
           {tab === 'parameters' && (
@@ -283,6 +300,151 @@ export default function App() {
                 <Metric label="QAOA p" value={3} />
                 <Metric label="Qubits" value={105} />
               </div>
+            </div>
+          )}
+          {tab === 'bom' && (
+            <div className="stack">
+              <div className="card">
+                <h3 className="section-title">Physical BOM — {PROTOTYPE.label}</h3>
+                <p style={{ color: 'var(--muted)', fontSize: '0.8rem', marginTop: 0 }}>
+                  Area {PROTOTYPE.areaSqFt} sq ft ({PROTOTYPE.areaM2} m²). Costs are prototype-scale estimates (USD).
+                </p>
+                <div className="grid-metrics">
+                  <Metric label="Total BOM" value={`$${bom.totalUsd}`} tone="ok" />
+                  <Metric label="Cost / sq ft" value={`$${bom.costPerSqFt}`} />
+                  <Metric label="Line items" value={bom.lines.length} />
+                </div>
+                <div className="bom-table-wrap">
+                  <table className="bom-table">
+                    <thead>
+                      <tr>
+                        <th>Category</th>
+                        <th>Component / trade name</th>
+                        <th>Specification</th>
+                        <th>Qty</th>
+                        <th>Ext. $</th>
+                        <th>Supplier</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bom.lines.map((line) => (
+                        <tr key={line.id}>
+                          <td>{line.category}</td>
+                          <td>
+                            <strong>{line.component}</strong>
+                            <br />
+                            <span className="muted">{line.tradeName}</span>
+                          </td>
+                          <td>{line.specification}</td>
+                          <td>{line.qty}</td>
+                          <td>${line.extendedUsd}</td>
+                          <td>{line.supplier}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+          {tab === 'stack' && (
+            <div className="stack">
+              <div className="grid-metrics">
+                <Metric label="Total thickness" value={stack.totalMm} unit="mm" />
+                <Metric label="Total thickness" value={stack.totalInch} unit="in" />
+                <Metric label="Weight" value={stack.weightKgPerM2} unit="kg/m²" />
+                <Metric label="Weight" value={stack.weightLbPerSqFt} unit="lb/ft²" />
+                <Metric label="z_NA" value={stack.zNA_mm} unit="mm" />
+              </div>
+              <div className="two-col">
+                <div className="card">
+                  <h3 className="section-title">Cross-section (top → bottom)</h3>
+                  <div className="stack-diagram">
+                    {stack.layers.map((L) => (
+                      <div
+                        key={L.index}
+                        className="stack-layer"
+                        style={{ minHeight: Math.max(18, Math.min(56, L.thicknessMm * 10 + 12)) }}
+                      >
+                        <span className="stack-idx">L{L.index}</span>
+                        <span className="stack-name">{L.name}</span>
+                        <span className="stack-th">{L.thicknessMm < 0.01 ? '35 nm' : `${L.thicknessMm} mm`}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="card">
+                  <h3 className="section-title">Layer details</h3>
+                  <div className="param-list">
+                    {stack.layers.map((L) => (
+                      <div key={L.index}>
+                        <span>L{L.index} {L.name} — {L.material}</span>
+                        <span>{L.thicknessImperial} · {L.role}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="formula" style={{ marginTop: '0.75rem' }}>
+{`Total stack ≈ ${stack.totalMm} mm (${stack.totalInch}") — under 3/8"\nOuter 2.0 + OCA 0.5 + Core ${params.substrateThicknessMm} + OCA 0.5 + Inner 2.0 + coating 0.05\nNeutral axis z_NA ≈ ${stack.zNA_mm} mm (core-centered)`}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {tab === 'wiring' && (
+            <div className="stack">
+              <div className="grid-metrics">
+                <Metric label="Bus gauge" value="16 AWG" />
+                <Metric label="Max DC current" value={ELECTRICAL_SPEC.maxCurrentA} unit="A" />
+                <Metric label="Inverter size" value="120×25×12" unit="mm" />
+                <Metric label="Thermal break" value="18" unit="mm" />
+              </div>
+              <div className="card">
+                <h3 className="section-title">Wire routing &amp; bus</h3>
+                <div className="param-list">
+                  <div><span>Primary DC bus</span><span>{ELECTRICAL_SPEC.primaryBus}</span></div>
+                  <div><span>Edge interconnect</span><span>{ELECTRICAL_SPEC.ribbonBusbar}</span></div>
+                  <div><span>Routing path</span><span>{ELECTRICAL_SPEC.routing}</span></div>
+                </div>
+              </div>
+              <div className="card">
+                <h3 className="section-title">Inverter &amp; safety</h3>
+                <div className="param-list">
+                  <div><span>Form factor</span><span>{ELECTRICAL_SPEC.inverterFormFactor}</span></div>
+                  <div><span>Mounting cavity</span><span>{ELECTRICAL_SPEC.inverterCavity}</span></div>
+                  <div><span>Thermal path</span><span>{ELECTRICAL_SPEC.thermalInterface}</span></div>
+                  <div><span>Connectors</span><span>{ELECTRICAL_SPEC.connectors}</span></div>
+                  <div><span>Protection</span><span>{ELECTRICAL_SPEC.fuse}</span></div>
+                  <div><span>NEC 690</span><span>{ELECTRICAL_SPEC.rapidShutdown}</span></div>
+                </div>
+              </div>
+            </div>
+          )}
+          {tab === 'assembly' && (
+            <div className="stack">
+              <div className="card">
+                <h3 className="section-title">Builder&apos;s fabrication guide — {PROTOTYPE.label}</h3>
+                <p style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
+                  Shop sequence for a physical prototype. Adjust temperatures/pressures to your adhesive and resin datasheets.
+                </p>
+              </div>
+              {ASSEMBLY_STEPS.map((s) => (
+                <div className="card" key={s.step}>
+                  <h3 className="section-title">Step {s.step}: {s.title}</h3>
+                  <ol className="build-steps">
+                    {s.details.map((d, i) => (
+                      <li key={i}>{d}</li>
+                    ))}
+                  </ol>
+                  <div className="check-list">
+                    <strong>Checks</strong>
+                    <ul>
+                      {s.checks.map((c, i) => (
+                        <li key={i}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </main>
