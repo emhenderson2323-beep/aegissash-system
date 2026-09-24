@@ -6,6 +6,9 @@ import {
   evaluateHamiltonian,
   buildLaminateStack,
   computeNeutralAxis,
+  simulateAnnualYield,
+  simulateDegradation25y,
+  PRESET_LOCATIONS,
 } from './lib/engine';
 import {
   autoCorrectParameters,
@@ -17,6 +20,9 @@ import {
   OptimizeMode,
   SweepProgress,
   ParetoCandidate,
+  inverseDesignSolve,
+  InverseTargetSpecs,
+  InverseDesignResult,
 } from './utils/solver';
 import {
   PROTOTYPE,
@@ -30,7 +36,7 @@ import {
 type TabId =
   | 'overview' | 'optics' | 'thermal' | 'structural' | 'nocturnal'
   | 'electrical' | 'compliance' | 'parameters' | 'qubo'
-  | 'bom' | 'stack' | 'wiring' | 'assembly';
+  | 'bom' | 'stack' | 'wiring' | 'assembly' | 'forecast';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -46,6 +52,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'stack', label: 'Glass Stack & Layup' },
   { id: 'wiring', label: 'Electrical & Wiring' },
   { id: 'assembly', label: 'Assembly Manual' },
+  { id: 'forecast', label: '25-Year Climate & ROI' },
 ];
 
 function Metric({
@@ -78,6 +85,14 @@ export default function App() {
   const [candidates, setCandidates] = useState<ParetoCandidate[]>([]);
   const [selectedStack, setSelectedStack] = useState<DynamicStackResult | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [invCost, setInvCost] = useState(100);
+  const [invPower, setInvPower] = useState(70);
+  const [invU, setInvU] = useState(0.7);
+  const [invDp, setInvDp] = useState(105);
+  const [inverseResult, setInverseResult] = useState<InverseDesignResult | null>(null);
+  const [locationIdx, setLocationIdx] = useState(0);
+  const [tiltDeg, setTiltDeg] = useState(30);
+  const [bomCostOverride, setBomCostOverride] = useState(1593);
 
   const m = useMemo(() => computePhysics(params, Gsolar, Tamb), [params, Gsolar, Tamb]);
   const labels = useMemo(() => paramsToLabels(params), [params]);
@@ -90,6 +105,28 @@ export default function App() {
   const stack = useMemo(
     () => glassStackLayers(params.substrateThicknessMm),
     [params.substrateThicknessMm],
+  );
+  const location = PRESET_LOCATIONS[locationIdx] ?? PRESET_LOCATIONS[0];
+  const yieldForecast = useMemo(
+    () =>
+      simulateAnnualYield(
+        location,
+        tiltDeg,
+        m.electricalEfficiencyPct,
+        m.thermalEfficiencyPct,
+        PROTOTYPE.areaM2,
+        bomCostOverride,
+      ),
+    [location, tiltDeg, m.electricalEfficiencyPct, m.thermalEfficiencyPct, bomCostOverride],
+  );
+  const degradation = useMemo(
+    () =>
+      simulateDegradation25y(
+        params.dyeConcentrationPpm,
+        params.barrierType !== 'None',
+        params.thermalBreakWidthMm,
+      ),
+    [params.dyeConcentrationPpm, params.barrierType, params.thermalBreakWidthMm],
   );
 
   const applyParams = useCallback(
@@ -128,6 +165,7 @@ export default function App() {
       if (cands.length > 0) {
         setSelectedStack(cands[0].result);
         setParams(stackConfigToParams(cands[0].result.config, params));
+        setBomCostOverride(cands[0].result.bomCostUsd);
       }
     }, 30);
   };
@@ -135,22 +173,35 @@ export default function App() {
   const applyCandidate = (c: ParetoCandidate) => {
     setSelectedStack(c.result);
     setParams(stackConfigToParams(c.result.config, params));
+    setBomCostOverride(c.result.bomCostUsd);
+  };
+
+  const runInverseDesign = () => {
+    const targets: InverseTargetSpecs = {
+      targetCostPerSqFt: invCost,
+      targetPowerWm2: invPower,
+      targetUFactor: invU,
+      targetDpRating: invDp,
+    };
+    const result = inverseDesignSolve(targets, params, 5000);
+    setInverseResult(result);
+    setParams(result.params);
+    setSelectedStack(result.stack);
+    setBomCostOverride(result.stack.bomCostUsd);
   };
 
   return (
     <div className="app">
       <header className="header">
         <div className="brand">
-          <h1>AegisSash Executive Portal</h1>
-          <span>Docket AEGIS-PROV-2026-01 · QUBO/QAOA Pareto Sweep · v84.1</span>
+          <h1>AegisSash Super-Intelligence Simulator</h1>
+          <span>Inverse Design · Climate ROI · 25-Year Degradation · v85</span>
         </div>
         <div className="badge-row">
           <span className={`badge ${m.nfrc100Pass ? 'ok' : 'fail'}`}>NFRC 100 {m.nfrc100Pass ? 'PASS' : 'FAIL'}</span>
           <span className={`badge ${m.nfrc200Pass ? 'ok' : 'fail'}`}>NFRC 200 {m.nfrc200Pass ? 'PASS' : 'FAIL'}</span>
           <span className={`badge ${m.dp105Capable ? 'ok' : 'fail'}`}>DP105 {m.dp105Capable ? 'OK' : 'CHECK'}</span>
           <span className={`badge ${m.nec690Pass ? 'ok' : 'fail'}`}>NEC 690</span>
-          <span className={`badge ${m.ul61730Pass ? 'ok' : 'fail'}`}>UL 61730</span>
-          <span className={`badge ${m.ieee1547Pass ? 'ok' : 'fail'}`}>IEEE 1547</span>
         </div>
       </header>
       <div className="layout">
@@ -167,37 +218,29 @@ export default function App() {
               <span>Auto-Correct Mode</span>
             </label>
           </div>
-          {lastCorrections.length > 0 && (
-            <div className="correction-log">
-              <div className="label">Last solver actions ({lastCorrections.length})</div>
-              <ul>{lastCorrections.slice(0, 6).map((c, i) => (
-                <li key={`${c.field}-${i}`}><strong>{c.field}</strong>: {String(c.from)} → {String(c.to)}</li>
-              ))}</ul>
-            </div>
-          )}
 
           <h3 className="section-title">Quantum-inspired optimization</h3>
           <div className="field">
             <label>Strategy</label>
             <select value={optMode} onChange={(e) => setOptMode(e.target.value as OptimizeMode)}>
               <option value="pareto_roi">Pareto Optimal (Best Value / Max ROI)</option>
-              <option value="max_performance">Maximum Performance (No Budget Cap)</option>
+              <option value="max_performance">Maximum Performance</option>
               <option value="budget_cap">Target Budget Cap</option>
               <option value="exhaustive">Exhaustive Quantum Sweep</option>
             </select>
           </div>
           {optMode === 'budget_cap' && (
             <div className="field">
-              <label>Budget cap (USD / window)</label>
+              <label>Budget cap (USD)</label>
               <input type="number" min={400} max={5000} step={50} value={budgetCap} onChange={(e) => setBudgetCap(Number(e.target.value))} />
             </div>
           )}
           <div className="btn-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
             <button className="btn quantum" type="button" onClick={runQuantumOpt} disabled={!!sweepProgress?.running}>
-              ⚛️ Run Quantum-Inspired Optimization (105-Qubit Emulator)
+              ⚛️ Run Quantum-Inspired Optimization
             </button>
             <button className="btn secondary" type="button" onClick={() => setDrawerOpen((o) => !o)}>
-              {drawerOpen ? 'Hide' : 'Show'} top candidates ({candidates.length})
+              {drawerOpen ? 'Hide' : 'Show'} candidates ({candidates.length})
             </button>
           </div>
           {sweepProgress && (
@@ -213,11 +256,41 @@ export default function App() {
               </div>
             </div>
           )}
-          {selectedStack && (
-            <div className="correction-log">
-              <div className="label">Active candidate</div>
-              <div style={{ color: 'var(--cyan)', fontSize: '0.72rem' }}>
-                {selectedStack.label} · BOM ${selectedStack.bomCostUsd} · U={selectedStack.uFactor} · F={selectedStack.fitness}
+
+          <h3 className="section-title">🤖 AI Inverse Generative Optimizer</h3>
+          <div className="field">
+            <label>Target cost ($/sq ft): {invCost}</label>
+            <input type="range" min={40} max={200} step={5} value={invCost} onChange={(e) => setInvCost(Number(e.target.value))} />
+          </div>
+          <div className="field">
+            <label>Target power (W/m²): {invPower}</label>
+            <input type="range" min={20} max={120} step={5} value={invPower} onChange={(e) => setInvPower(Number(e.target.value))} />
+          </div>
+          <div className="field">
+            <label>Target U-factor: {invU}</label>
+            <input type="range" min={0.4} max={1.4} step={0.05} value={invU} onChange={(e) => setInvU(Number(e.target.value))} />
+          </div>
+          <div className="field">
+            <label>Target DP rating</label>
+            <select value={invDp} onChange={(e) => setInvDp(Number(e.target.value))}>
+              <option value={50}>DP50</option>
+              <option value={70}>DP70</option>
+              <option value={105}>DP105</option>
+            </select>
+          </div>
+          <div className="btn-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+            <button className="btn quantum" type="button" onClick={runInverseDesign}>
+              🤖 Run Inverse Design Solve
+            </button>
+          </div>
+          {inverseResult && (
+            <div className="quantum-status">
+              <div className="label">{inverseResult.message}</div>
+              <div className="q-metrics">
+                <span>${inverseResult.achieved.costPerSqFt}/ft²</span>
+                <span>{inverseResult.achieved.powerWm2} W/m²</span>
+                <span>U={inverseResult.achieved.uFactor}</span>
+                <span>DP{inverseResult.achieved.dpRating}</span>
               </div>
             </div>
           )}
@@ -231,28 +304,13 @@ export default function App() {
             <label>Ambient temperature (°C)</label>
             <input type="number" min={-20} max={50} value={Tamb} onChange={(e) => setTamb(Number(e.target.value))} />
           </div>
-          <h3 className="section-title">Key design levers</h3>
-          <div className="field">
-            <label>P1 Polymer</label>
-            <select value={params.basePolymer} onChange={(e) => update('basePolymer', e.target.value as DesignParams['basePolymer'])}>
-              <option value="Zeonex_150ppm">Zeonex 150ppm</option>
-              <option value="PMMA">PMMA</option>
-              <option value="Polycarbonate">Polycarbonate</option>
-              <option value="Glass">Glass</option>
-            </select>
-          </div>
           <div className="field">
             <label>P14 Edge PV</label>
             <select value={params.pvMaterial} onChange={(e) => update('pvMaterial', e.target.value as DesignParams['pvMaterial'])}>
               <option value="GaAs">GaAs</option>
               <option value="c-Si">c-Si</option>
               <option value="GaN">GaN</option>
-              <option value="Perovskite">Perovskite</option>
             </select>
-          </div>
-          <div className="field">
-            <label>P17 ṁ kg/s</label>
-            <input type="number" min={0.01} max={0.5} step={0.01} value={params.massFlowKgS} onChange={(e) => update('massFlowKgS', Number(e.target.value))} />
           </div>
           <div className="field">
             <label>Cavity gas</label>
@@ -262,10 +320,6 @@ export default function App() {
               <option value="Air">Air</option>
             </select>
           </div>
-          <div className="field">
-            <label>Low-E ε</label>
-            <input type="number" min={0.02} max={0.84} step={0.01} value={params.lowEEmissivity} onChange={(e) => update('lowEEmissivity', Number(e.target.value))} />
-          </div>
         </aside>
         <main className="main">
           <div className="tabs">
@@ -274,15 +328,13 @@ export default function App() {
             ))}
           </div>
           {tab === 'overview' && (
-            <div className="stack">
-              <div className="grid-metrics">
-                <Metric label="Electrical η" value={m.electricalEfficiencyPct} unit="%" tone="ok" />
-                <Metric label="Thermal η" value={m.thermalEfficiencyPct} unit="%" tone="ok" />
-                <Metric label="Power density" value={m.powerDensityWm2} unit="W/m²" />
-                <Metric label="U-factor" value={m.uFactor} unit="W/m²·K" tone={m.nfrc100Pass ? 'ok' : 'bad'} />
-                <Metric label="SHGC" value={m.shgc} tone={m.nfrc200Pass ? 'ok' : 'warn'} />
-                <Metric label="Combined yield" value={m.combinedYieldWm2} unit="W/m²" />
-              </div>
+            <div className="grid-metrics">
+              <Metric label="Electrical η" value={m.electricalEfficiencyPct} unit="%" tone="ok" />
+              <Metric label="Thermal η" value={m.thermalEfficiencyPct} unit="%" tone="ok" />
+              <Metric label="Power density" value={m.powerDensityWm2} unit="W/m²" />
+              <Metric label="U-factor" value={m.uFactor} unit="W/m²·K" tone={m.nfrc100Pass ? 'ok' : 'bad'} />
+              <Metric label="SHGC" value={m.shgc} />
+              <Metric label="Combined yield" value={m.combinedYieldWm2} unit="W/m²" />
             </div>
           )}
           {tab === 'optics' && (
@@ -290,13 +342,12 @@ export default function App() {
               <Metric label="T_vis" value={m.opticalTransparency} />
               <Metric label="Haze" value={m.hazePct} unit="%" />
               <Metric label="FRET" value={(m.fretEfficiency * 100).toFixed(1)} unit="%" />
-              <Metric label="Trap" value={m.trapFraction} />
             </div>
           )}
           {tab === 'thermal' && (
             <div className="grid-metrics">
               <Metric label="η_th" value={m.thermalEfficiencyPct} unit="%" />
-              <Metric label="U" value={m.uFactor} unit="W/m²·K" tone={m.nfrc100Pass ? 'ok' : 'bad'} />
+              <Metric label="U" value={m.uFactor} unit="W/m²·K" />
               <Metric label="ΔT fluid" value={m.fluidDeltaT} unit="K" />
             </div>
           )}
@@ -304,7 +355,7 @@ export default function App() {
             <div className="grid-metrics">
               <Metric label="z_NA" value={m.neutralAxisMm} unit="mm" />
               <Metric label="σ_max" value={m.maxFlexuralStressMPa} unit="MPa" />
-              <Metric label="DP105" value={m.dp105Capable ? 'OK' : 'CHECK'} tone={m.dp105Capable ? 'ok' : 'warn'} />
+              <Metric label="DP105" value={m.dp105Capable ? 'OK' : 'CHECK'} />
             </div>
           )}
           {tab === 'nocturnal' && (
@@ -339,7 +390,6 @@ export default function App() {
           {tab === 'qubo' && (
             <div className="grid-metrics">
               <Metric label="H_total" value={H.toFixed(4)} />
-              <Metric label="QAOA p" value={3} />
               <Metric label="Qubits" value={105} />
             </div>
           )}
@@ -352,13 +402,12 @@ export default function App() {
               </div>
               <div className="bom-table-wrap">
                 <table className="bom-table">
-                  <thead><tr><th>Category</th><th>Component</th><th>Spec</th><th>Ext. $</th><th>Supplier</th></tr></thead>
+                  <thead><tr><th>Category</th><th>Component</th><th>Ext. $</th><th>Supplier</th></tr></thead>
                   <tbody>
                     {bom.lines.map((line) => (
                       <tr key={line.id}>
                         <td>{line.category}</td>
-                        <td><strong>{line.component}</strong><br /><span className="muted">{line.tradeName}</span></td>
-                        <td>{line.specification}</td>
+                        <td>{line.component}</td>
                         <td>${line.extendedUsd}</td>
                         <td>{line.supplier}</td>
                       </tr>
@@ -373,11 +422,10 @@ export default function App() {
               <div className="grid-metrics">
                 <Metric label="Total thickness" value={stack.totalMm} unit="mm" />
                 <Metric label="z_NA" value={stack.zNA_mm} unit="mm" />
-                <Metric label="Weight" value={stack.weightLbPerSqFt} unit="lb/ft²" />
               </div>
               <div className="stack-diagram">
                 {stack.layers.map((L) => (
-                  <div key={L.index} className="stack-layer" style={{ minHeight: Math.max(18, Math.min(56, L.thicknessMm * 10 + 12)) }}>
+                  <div key={L.index} className="stack-layer">
                     <span className="stack-idx">L{L.index}</span>
                     <span className="stack-name">{L.name}</span>
                     <span className="stack-th">{L.thicknessMm < 0.01 ? '35 nm' : `${L.thicknessMm} mm`}</span>
@@ -391,7 +439,6 @@ export default function App() {
               <div className="param-list">
                 <div><span>Primary DC bus</span><span>{ELECTRICAL_SPEC.primaryBus}</span></div>
                 <div><span>Form factor</span><span>{ELECTRICAL_SPEC.inverterFormFactor}</span></div>
-                <div><span>NEC 690</span><span>{ELECTRICAL_SPEC.rapidShutdown}</span></div>
               </div>
             </div>
           )}
@@ -401,9 +448,68 @@ export default function App() {
                 <div className="card" key={s.step}>
                   <h3 className="section-title">Step {s.step}: {s.title}</h3>
                   <ol className="build-steps">{s.details.map((d, i) => <li key={i}>{d}</li>)}</ol>
-                  <div className="check-list"><strong>Checks</strong><ul>{s.checks.map((c, i) => <li key={i}>{c}</li>)}</ul></div>
                 </div>
               ))}
+            </div>
+          )}
+          {tab === 'forecast' && (
+            <div className="stack">
+              <div className="card">
+                <h3 className="section-title">☀️ Location &amp; microclimate</h3>
+                <div className="two-col">
+                  <div className="field">
+                    <label>Location</label>
+                    <select value={locationIdx} onChange={(e) => setLocationIdx(Number(e.target.value))}>
+                      {PRESET_LOCATIONS.map((loc, i) => (
+                        <option key={loc.name} value={i}>{loc.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Tilt angle: {tiltDeg}°</label>
+                    <input type="range" min={0} max={60} value={tiltDeg} onChange={(e) => setTiltDeg(Number(e.target.value))} />
+                  </div>
+                </div>
+                <div className="grid-metrics">
+                  <Metric label="G avg" value={location.avgIrradianceKwhM2Day} unit="kWh/m²·day" />
+                  <Metric label="Elec rate" value={`$${location.electricityUsdPerKwh}`} unit="/kWh" />
+                  <Metric label="BOM (ROI basis)" value={`$${bomCostOverride}`} />
+                </div>
+              </div>
+              <div className="grid-metrics">
+                <Metric label="Y1 electric" value={yieldForecast.year1ElectricKwh} unit="kWh" tone="ok" />
+                <Metric label="Y1 thermal" value={Math.round(yieldForecast.year1ThermalBtu / 1000)} unit="kBTU" />
+                <Metric label="Y1 savings" value={`$${yieldForecast.year1SavingsUsd}`} tone="ok" />
+                <Metric label="Payback" value={yieldForecast.paybackYears} unit="yr" />
+                <Metric label="Y5 electric" value={yieldForecast.year5ElectricKwh} unit="kWh" />
+                <Metric label="Y5 savings" value={`$${yieldForecast.year5SavingsUsd}`} />
+                <Metric label="Y25 electric" value={yieldForecast.year25ElectricKwh} unit="kWh" />
+                <Metric label="Y25 savings" value={`$${yieldForecast.year25SavingsUsd}`} tone="ok" />
+                <Metric label="25y ROI" value={yieldForecast.roi25Pct} unit="%" tone={yieldForecast.roi25Pct > 0 ? 'ok' : 'warn'} />
+              </div>
+              <div className="card">
+                <h3 className="section-title">Monthly electric profile (kWh)</h3>
+                <div className="month-bars">
+                  {yieldForecast.monthlyElectricKwh.map((v, i) => (
+                    <div key={i} className="month-bar-col">
+                      <div className="month-bar" style={{ height: `${Math.min(100, v * 2)}px` }} title={`${v} kWh`} />
+                      <span>{['J','F','M','A','M','J','J','A','S','O','N','D'][i]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="card">
+                <h3 className="section-title">25-year degradation &amp; reliability</h3>
+                <div className="grid-metrics">
+                  <Metric label="Y25 η_el retention" value={(degradation[25].etaElRetention * 100).toFixed(1)} unit="%" />
+                  <Metric label="Y25 η_th retention" value={(degradation[25].etaThRetention * 100).toFixed(1)} unit="%" />
+                  <Metric label="Y25 haze" value={degradation[25].hazePct} unit="%" />
+                  <Metric label="Y25 overall" value={(degradation[25].overallRetention * 100).toFixed(1)} unit="%" tone="ok" />
+                </div>
+                <div className="formula">
+{`PV 0.5%/yr · dye photobleach · haze · seal stress\nY10 overall ${(degradation[10].overallRetention * 100).toFixed(1)}% · Y25 overall ${(degradation[25].overallRetention * 100).toFixed(1)}%`}
+                </div>
+              </div>
             </div>
           )}
         </main>
@@ -427,11 +533,7 @@ export default function App() {
                   <span>BOM ${c.result.bomCostUsd}</span>
                   <span>U {c.result.uFactor}</span>
                   <span>P {c.result.powerWm2} W/m²</span>
-                  <span>η_el {c.result.etaEl}%</span>
-                  <span>Layers {c.result.config.layerCount}</span>
-                  <span>Payback {c.paybackYears} yr</span>
                   <span>F(x) {c.roiScore}</span>
-                  <span>{c.result.dp105Pass ? 'DP105 OK' : 'DP105?'}</span>
                 </div>
               </button>
             ))}
