@@ -1,5 +1,5 @@
 /**
- * Aegis Sash physics engine — 22-parameter BIPV-T + climate + degradation
+ * Aegis Sash physics engine — BIPV-T + climate + CTE + hydronics
  * Docket AEGIS-PROV-2026-01
  */
 
@@ -108,6 +108,14 @@ export interface PhysicsMetrics {
   nec690Pass: boolean;
   ul61730Pass: boolean;
   ieee1547Pass: boolean;
+  pumpPowerW: number;
+  netPowerDensityWm2: number;
+  fluidViscosityPaS: number;
+  frictionFactor: number;
+  tauMaxKPa: number;
+  tauYieldKPa: number;
+  cteDelaminationRisk: boolean;
+  recommendedInterlayerMm: number;
 }
 
 export interface LaminateLayer {
@@ -164,6 +172,23 @@ export function computePhysics(p: DesignParams, Gsolar = 1000, Tamb = 25): Physi
   const sigma = 12 + p.substrateThicknessMm * 0.5;
   const shgc = Math.max(0.18, Math.min(0.45, 0.36 - p.lowEEmissivity * 0.1 + (tVis - 0.9) * 0.2));
   const wvtr = p.barrierType === 'Multi_ALD_AlN_SiO2' ? 1e-6 : p.barrierType === 'None' ? 1e-2 : 1e-5;
+
+  const hydro = computeHydronicParasitic(p.massFlowKgS, cellTemp, p.panelWidthM, p.panelHeightM);
+  const areaM2 = Math.max(0.1, p.panelWidthM * p.panelHeightM);
+  const grossW = powerWm2 * areaM2;
+  const netPowerDensityWm2 = Math.max(0, (grossW - hydro.pumpPowerW) / areaM2);
+
+  const cte = checkThermalStress(
+    [
+      { name: 'glass', alpha: 8.5e-6, EGpa: 72, thicknessMm: 2.0 },
+      { name: 'oca', alpha: 80e-6, EGpa: p.adhesiveModulusGPa, thicknessMm: 0.5 },
+      { name: 'core', alpha: 60e-6, EGpa: p.basePolymer === 'Glass' ? 72 : 2.5, thicknessMm: p.substrateThicknessMm },
+      { name: 'oca', alpha: 80e-6, EGpa: p.adhesiveModulusGPa, thicknessMm: 0.5 },
+      { name: 'glass', alpha: 8.5e-6, EGpa: 72, thicknessMm: 2.0 },
+    ],
+    50,
+  );
+
   return {
     opticalTransparency: Math.round(tVis * 1000) / 1000,
     hazePct: haze,
@@ -191,6 +216,14 @@ export function computePhysics(p: DesignParams, Gsolar = 1000, Tamb = 25): Physi
     nec690Pass: p.inverterTopology === 'Buck_Boost_DC_DC' || p.inverterTopology === 'Microinverter',
     ul61730Pass: true,
     ieee1547Pass: true,
+    pumpPowerW: hydro.pumpPowerW,
+    netPowerDensityWm2: Math.round(netPowerDensityWm2 * 10) / 10,
+    fluidViscosityPaS: hydro.viscosityPaS,
+    frictionFactor: hydro.frictionFactor,
+    tauMaxKPa: cte.tauMaxKPa,
+    tauYieldKPa: cte.tauYieldKPa,
+    cteDelaminationRisk: cte.delaminationRisk,
+    recommendedInterlayerMm: cte.recommendedInterlayerMm,
   };
 }
 
@@ -221,17 +254,10 @@ export function paramsToLabels(p: DesignParams): { key: string; value: string }[
   ];
 }
 
-// ─── Location / microclimate annual yield + 25-year degradation ─────────────
-
 export interface LocationConfig {
-  name: string;
-  latitudeDeg: number;
-  avgIrradianceKwhM2Day: number;
-  avgAmbientC: number;
-  winterAmbientC: number;
-  summerAmbientC: number;
-  electricityUsdPerKwh: number;
-  heatingFuelUsdPerTherm: number;
+  name: string; latitudeDeg: number; avgIrradianceKwhM2Day: number;
+  avgAmbientC: number; winterAmbientC: number; summerAmbientC: number;
+  electricityUsdPerKwh: number; heatingFuelUsdPerTherm: number;
 }
 
 export const PRESET_LOCATIONS: LocationConfig[] = [
@@ -244,35 +270,20 @@ export const PRESET_LOCATIONS: LocationConfig[] = [
 ];
 
 export interface AnnualYieldResult {
-  location: LocationConfig;
-  tiltDeg: number;
-  annualElectricKwhPerM2: number;
-  annualThermalKwhPerM2: number;
-  annualThermalBtuPerM2: number;
-  year1ElectricKwh: number;
-  year1ThermalBtu: number;
-  year5ElectricKwh: number;
-  year5ThermalBtu: number;
-  year25ElectricKwh: number;
-  year25ThermalBtu: number;
-  year1SavingsUsd: number;
-  year5SavingsUsd: number;
-  year25SavingsUsd: number;
-  paybackYears: number;
-  roi25Pct: number;
-  monthlyElectricKwh: number[];
-  monthlyThermalBtu: number[];
+  location: LocationConfig; tiltDeg: number;
+  annualElectricKwhPerM2: number; annualThermalKwhPerM2: number; annualThermalBtuPerM2: number;
+  year1ElectricKwh: number; year1ThermalBtu: number;
+  year5ElectricKwh: number; year5ThermalBtu: number;
+  year25ElectricKwh: number; year25ThermalBtu: number;
+  year1SavingsUsd: number; year5SavingsUsd: number; year25SavingsUsd: number;
+  paybackYears: number; roi25Pct: number;
+  monthlyElectricKwh: number[]; monthlyThermalBtu: number[];
 }
 
 const MONTH_FRAC = [0.06, 0.07, 0.09, 0.1, 0.11, 0.11, 0.11, 0.1, 0.09, 0.07, 0.05, 0.04];
 
 export function simulateAnnualYield(
-  location: LocationConfig,
-  tiltDeg: number,
-  etaElPct: number,
-  etaThPct: number,
-  areaM2: number,
-  bomCostUsd: number,
+  location: LocationConfig, tiltDeg: number, etaElPct: number, etaThPct: number, areaM2: number, bomCostUsd: number,
 ): AnnualYieldResult {
   const lat = location.latitudeDeg;
   const optTilt = Math.max(0, Math.min(60, lat * 0.9));
@@ -283,10 +294,8 @@ export function simulateAnnualYield(
   const annualElectricKwhPerM2 = Gday * 365 * etaEl;
   const annualThermalKwhPerM2 = Gday * 365 * etaTh;
   const annualThermalBtuPerM2 = annualThermalKwhPerM2 * 3412.14;
-  const pvDeg = 0.005;
-  const thDeg = 0.003;
-  let eCum = 0;
-  let tCum = 0;
+  const pvDeg = 0.005; const thDeg = 0.003;
+  let eCum = 0, tCum = 0;
   const monthlyElectricKwh: number[] = [];
   const monthlyThermalBtu: number[] = [];
   for (let m = 0; m < 12; m++) {
@@ -330,19 +339,11 @@ export function simulateAnnualYield(
 }
 
 export interface DegradationResult {
-  year: number;
-  etaElRetention: number;
-  etaThRetention: number;
-  hazePct: number;
-  sealStressFactor: number;
-  overallRetention: number;
+  year: number; etaElRetention: number; etaThRetention: number;
+  hazePct: number; sealStressFactor: number; overallRetention: number;
 }
 
-export function simulateDegradation25y(
-  dyePpm: number,
-  hasAldBarrier: boolean,
-  thermalBreakMm: number,
-): DegradationResult[] {
+export function simulateDegradation25y(dyePpm: number, hasAldBarrier: boolean, thermalBreakMm: number): DegradationResult[] {
   const results: DegradationResult[] = [];
   const bleachRate = hasAldBarrier ? 0.004 : 0.012;
   const dyeFactor = Math.min(1.5, dyePpm / 125);
@@ -365,4 +366,75 @@ export function simulateDegradation25y(
     });
   }
   return results;
+}
+
+export interface CteLayer { name: string; alpha: number; EGpa: number; thicknessMm: number; }
+
+export interface ThermalStressResult {
+  deltaT: number; tauMaxKPa: number; tauYieldKPa: number; delaminationRisk: boolean;
+  recommendedInterlayerMm: number; glassAlpha: number; polymerAlpha: number; frameAlpha: number;
+  differentialStrain: number; message: string;
+}
+
+export function checkThermalStress(stack: CteLayer[], deltaT: number, interlayerThicknessMm = 0.5): ThermalStressResult {
+  const glassAlpha = 8.5e-6;
+  const polymerAlpha = 60e-6;
+  const frameAlpha = 23e-6;
+  const differentialStrain = Math.abs((polymerAlpha - glassAlpha) * deltaT);
+  const EocaGpa = stack.find((s) => s.name === 'oca')?.EGpa ?? 1.2;
+  const GinterMPa = Math.max(0.15, EocaGpa / 3);
+  const LedgeMm = 8;
+  const h = Math.max(0.3, interlayerThicknessMm);
+  const tauMaxKPa = GinterMPa * differentialStrain * (LedgeMm / h) * 12 * 1000;
+  const tauYieldKPa = 800;
+  let recommended = interlayerThicknessMm;
+  if (tauMaxKPa > tauYieldKPa * 0.9) {
+    recommended = Math.min(1.0, Math.max(0.5, h * (tauMaxKPa / (tauYieldKPa * 0.75))));
+  }
+  const tauAtRec = GinterMPa * differentialStrain * (LedgeMm / Math.max(0.3, recommended)) * 12 * 1000;
+  const delaminationRisk = tauAtRec >= tauYieldKPa;
+  return {
+    deltaT,
+    tauMaxKPa: Math.round(tauMaxKPa * 10) / 10,
+    tauYieldKPa,
+    delaminationRisk,
+    recommendedInterlayerMm: Math.round(recommended * 100) / 100,
+    glassAlpha, polymerAlpha, frameAlpha,
+    differentialStrain: Math.round(differentialStrain * 1e6) / 1e6,
+    message: delaminationRisk
+      ? `CTE shear τ=${tauAtRec.toFixed(0)} kPa exceeds yield — increase OCA/EVA to ≥${recommended.toFixed(2)} mm`
+      : `CTE shear OK: τ_max=${tauMaxKPa.toFixed(0)} kPa < τ_yield=${tauYieldKPa} kPa (interlayer ${recommended} mm)`,
+  };
+}
+
+export interface HydronicParasiticResult {
+  viscosityPaS: number; densityKgM3: number; frictionFactor: number;
+  pressureDropPa: number; pumpPowerW: number; reynolds: number; fluidLabel: string;
+}
+
+export function computeHydronicParasitic(
+  massFlowKgS: number, fluidTempC: number, widthM: number, heightM: number,
+): HydronicParasiticResult {
+  const T = Math.max(-20, Math.min(80, fluidTempC));
+  const mu = 0.0065 * Math.exp(850 / (T + 273.15) - 850 / 293.15);
+  const rho = 1040 - 0.35 * (T - 20);
+  const tubeIdM = 0.00465;
+  const perimeterLoopM = 2 * (widthM + heightM) + 0.4;
+  const area = Math.PI * (tubeIdM / 2) ** 2;
+  const mDot = Math.max(0.01, massFlowKgS);
+  const v = mDot / (rho * area);
+  const Re = (rho * v * tubeIdM) / mu;
+  const f = Re < 2300 ? 64 / Math.max(Re, 1) : 0.316 / Math.pow(Re, 0.25);
+  const dP = f * (perimeterLoopM / tubeIdM) * 0.5 * rho * v * v;
+  const P_hyd = mDot * (dP / rho);
+  const pumpPowerW = Math.min(25, Math.max(0.5, P_hyd / 0.35));
+  return {
+    viscosityPaS: Math.round(mu * 1e5) / 1e5,
+    densityKgM3: Math.round(rho * 10) / 10,
+    frictionFactor: Math.round(f * 1000) / 1000,
+    pressureDropPa: Math.round(dP),
+    pumpPowerW: Math.round(pumpPowerW * 100) / 100,
+    reynolds: Math.round(Re),
+    fluidLabel: '40/60 Propylene Glycol / Water',
+  };
 }
