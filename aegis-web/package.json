@@ -3,7 +3,7 @@
   "private": true,
   "version": "91.0.0",
   "type": "module",
-  "description": "Solastrata™ BIPV-T Active Glazing Systems — digital twin & structural fenestration engine",
+  "description": "Solastrata™ BIPV-T Active Glazing Systems — Digital Twin & Structural Fenestration Engine",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
