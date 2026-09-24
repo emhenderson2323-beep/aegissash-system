@@ -79,3 +79,13 @@ button, input, select { font: inherit; }
 }
 .btn.secondary { background: var(--panel2); border: 1px solid var(--border); }
 .stack { display: flex; flex-direction: column; gap: 1rem; }
+.toggle-row {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.8rem; color: var(--muted); margin-top: 0.5rem; cursor: pointer;
+}
+.correction-log {
+  margin: 0.75rem 0 1rem; padding: 0.6rem; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 0.5rem; font-size: 0.72rem;
+}
+.correction-log ul { margin: 0.35rem 0 0; padding-left: 1.1rem; color: var(--cyan); }
+.correction-log .label { color: var(--muted); margin-bottom: 0.25rem; }
