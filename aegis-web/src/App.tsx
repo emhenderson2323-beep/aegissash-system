@@ -30,12 +30,13 @@ import {
   ELECTRICAL_SPEC,
   ASSEMBLY_STEPS,
   DynamicStackResult,
-  buildCsiSubmittal,
 } from './lib/manufacturing';
 import { GridExportCalculator } from './components/GridExportCalculator';
 import { FrameOptimizerPanel } from './components/FrameOptimizerPanel';
 import { UniversalAiAdvisorTab } from './components/UniversalAiAdvisorTab';
+import { StressTestPanel } from './components/StressTestPanel';
 import type { SimulationContext } from './lib/universalAiService';
+import type { StressTestInputs } from './lib/stressEngine';
 import { optimizeFrameMaterial } from './lib/frameOptimizer';
 import { calculateNetMeteringROI } from './netMeteringEngine';
 import { DEFAULT_NET_METERING_INPUTS } from './types/netMetering';
@@ -43,7 +44,7 @@ import { DEFAULT_NET_METERING_INPUTS } from './types/netMetering';
 type TabId =
   | 'overview' | 'optics' | 'thermal' | 'structural' | 'nocturnal'
   | 'electrical' | 'compliance' | 'parameters' | 'qubo'
-  | 'bom' | 'stack' | 'wiring' | 'assembly' | 'forecast' | 'net-metering' | 'frame' | 'ai-advisor';
+  | 'bom' | 'stack' | 'wiring' | 'assembly' | 'forecast' | 'net-metering' | 'frame' | 'ai-advisor' | 'stress';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -63,6 +64,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'net-metering', label: 'Net Metering & Grid Export' },
   { id: 'frame', label: 'Frame Optimizer' },
   { id: 'ai-advisor', label: '🤖 AI Advisor' },
+  { id: 'stress', label: '🛡️ Fault-Tolerance' },
 ];
 
 function Metric({
@@ -175,6 +177,26 @@ export default function App() {
     };
   }, [m, yieldForecast, bom, bomCostOverride, params, invCost, invU, invDp, forcedFrameId, stack]);
 
+  const stressInputs: StressTestInputs = useMemo(
+    () => ({
+      baseUFactor: m.uFactor,
+      baseShgc: m.shgc,
+      baseNetPowerWm2: m.netPowerDensityWm2,
+      baseTauMaxKPa: m.tauMaxKPa,
+      tauYieldKPa: m.tauYieldKPa,
+      frameCteMatchPct: aiContext.frameCteMatchPct,
+      year1ElectricKwh: yieldForecast.year1ElectricKwh,
+      year1ThermalKwh: Math.round(yieldForecast.year1ThermalBtu / 3412.14),
+      systemCapEx: bomCostOverride,
+      retailRate: 0.27,
+      selfConsumptionRatio: 60,
+      annualEscalationPct: 3.5,
+      degradationPct: 0.5,
+      areaM2: PROTOTYPE.areaM2,
+    }),
+    [m, aiContext.frameCteMatchPct, yieldForecast, bomCostOverride],
+  );
+
   const applyParams = useCallback(
     (next: DesignParams) => setParams(autoCorrectMode ? clampToCompliantBand(next) : next),
     [autoCorrectMode],
@@ -241,7 +263,7 @@ export default function App() {
       <header className="header">
         <div className="brand">
           <h1>AegisSash Super-Intelligence Simulator</h1>
-          <span>AI Advisor · Multi-provider · Offline rules · v89</span>
+          <span>Monte Carlo stress · Fault-tolerance · v90</span>
         </div>
         <div className="badge-row">
           <span className={`badge ${m.nfrc100Pass ? 'ok' : 'fail'}`}>NFRC 100 {m.nfrc100Pass ? 'PASS' : 'FAIL'}</span>
@@ -411,6 +433,9 @@ export default function App() {
           )}
           {tab === 'ai-advisor' && (
             <UniversalAiAdvisorTab context={aiContext} />
+          )}
+          {tab === 'stress' && (
+            <StressTestPanel inputs={stressInputs} />
           )}
         </main>
       </div>
