@@ -53,7 +53,7 @@ export function StressTestPanel({ inputs }: StressTestPanelProps) {
 
   const baselineNote = useMemo(
     () =>
-      `U=${inputs.baseUFactor} · τ=${inputs.baseTauMaxKPa} kPa · Y1 ${inputs.year1ElectricKwh} kWh · CapEx $${inputs.systemCapEx}`,
+      `Solastrata™ baseline: U=${inputs.baseUFactor} · τ=${inputs.baseTauMaxKPa} kPa · Y1 ${inputs.year1ElectricKwh} kWh · CapEx $${inputs.systemCapEx}`,
     [inputs],
   );
 
@@ -69,14 +69,14 @@ export function StressTestPanel({ inputs }: StressTestPanelProps) {
   return (
     <div className="stack">
       <div className="card">
-        <h3 className="section-title">🛡️ Fault-Tolerance &amp; Risk Audit</h3>
+        <h3 className="section-title">🛡️ Solastrata™ Fault-Tolerance &amp; Risk Audit</h3>
         <p style={{ color: 'var(--muted)', fontSize: '0.78rem', marginTop: 0 }}>
-          Monte Carlo topological sensitivity: freeze-thaw (−40°F…120°F), DP30–DP105 wind,
-          pump flow loss 0–100%, utility rate volatility, and material scatter. Reports P50 / P90 /
-          P99 on 25-year ROI and seal integrity.
+          Monte Carlo topological sensitivity for Solastrata™ BIPV-T Active Glazing Systems:
+          freeze-thaw (−40°F…120°F), DP30–DP105 wind, pump flow loss 0–100%, utility rate volatility,
+          and material scatter. Reports P50 / P90 / P99 on 25-year ROI and seal integrity.
         </p>
         <div style={{ fontSize: '0.7rem', color: 'var(--muted)', marginBottom: '0.75rem' }}>
-          Baseline: {baselineNote}
+          {baselineNote}
         </div>
         <button className="btn quantum" type="button" disabled={running} onClick={run}>
           {running ? 'Running 1,000-point sweep…' : 'Run 1,000-Point Edge-Case Validation'}
