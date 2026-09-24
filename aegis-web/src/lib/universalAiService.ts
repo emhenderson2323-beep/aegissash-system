@@ -1,6 +1,7 @@
 /**
  * Multi-provider AI advisor: Gemini, xAI Grok, Meta Llama (OpenRouter/Groq),
  * Azure OpenAI, and local offline rules fallback.
+ * Solastrata™ BIPV-T Active Glazing Systems
  */
 
 export type AiProviderId =
@@ -92,7 +93,7 @@ export function listProviders(): AiProviderInfo[] {
 }
 
 export function buildSystemPrompt(ctx: SimulationContext): string {
-  return `You are the Aegis Sash AI Architectural & Commercial Advisor — an expert in BIPV-T fenestration, NFRC/ASTM compliance, manufacturer partnerships, and grant writing.
+  return `You are the Solastrata™ AI Architectural & Commercial Advisor — an expert in BIPV-T fenestration, NFRC/ASTM compliance, manufacturer partnerships, and grant writing for Solastrata™ BIPV-T Active Glazing Systems.
 
 ACTIVE SIMULATION STATE (inject into every answer; do not invent conflicting numbers):
 - Optical: VLT=${ctx.vlt}, Haze=${ctx.hazePct}%, FRET=${ctx.fretPct}%
@@ -104,7 +105,7 @@ ACTIVE SIMULATION STATE (inject into every answer; do not invent conflicting num
 - Finance (NEB): simple payback ${ctx.simplePaybackYears} yr, NPV $${ctx.npv}, LCOE $${ctx.lcoe}/kWh
 - Glass stack: ${ctx.stackSummary}
 
-Respond in clear professional English suitable for architects, code officials, and manufacturers. Use markdown headings and bullets when helpful.`;
+Respond in clear professional English suitable for architects, code officials, and manufacturers. Use markdown headings and bullets when helpful. Always refer to the product as Solastrata™.`;
 }
 
 export function offlineAdvisorReply(userMessage: string, ctx: SimulationContext): string {
@@ -115,7 +116,7 @@ export function offlineAdvisorReply(userMessage: string, ctx: SimulationContext)
     const n200 = ctx.nfrc200Pass ? '**PASS** (0.20-0.40)' : '**REVIEW**';
     const dp = ctx.dp105Ok ? '**OK** for DP105 (5.02 kPa)' : '**REVIEW** span/thickness';
     return [
-      '## ASTM E1300 & NFRC Compliance Audit',
+      '## Solastrata™ ASTM E1300 & NFRC Compliance Audit',
       '',
       '| Check | Value | Status |',
       '|-------|-------|--------|',
@@ -127,7 +128,7 @@ export function offlineAdvisorReply(userMessage: string, ctx: SimulationContext)
       '**Recommendations**',
       '1. Keep cavity gas **' + ctx.cavityGas + '** and Low-E path for U <= 0.85.',
       '2. Confirm laminated stack neutral axis and edge support for DP105.',
-      '3. Document wet leakage & NEC 690 rapid shutdown in submittal package.',
+      '3. Document wet leakage & NEC 690 rapid shutdown in Solastrata™ submittal package.',
       '',
       '*Offline rules engine — add an API key for fuller narrative drafting.*',
     ].join('\n');
@@ -137,7 +138,7 @@ export function offlineAdvisorReply(userMessage: string, ctx: SimulationContext)
     return [
       '## Draft MTI Grant Proposal Narrative (excerpt)',
       '',
-      '**Project title:** Aegis Sash BIPV-T Fenestration — Dual-Stream Energy Harvesting Window',
+      '**Project title:** Solastrata™ BIPV-T Active Glazing Systems — Dual-Stream Energy Harvesting Window',
       '',
       '**Technical summary.** Electrical η **' +
         ctx.electricalEtaPct +
@@ -169,7 +170,7 @@ export function offlineAdvisorReply(userMessage: string, ctx: SimulationContext)
         ctx.frameCteMatchPct +
         '%**.',
       '',
-      '**Work plan.** (1) NFRC/ASTM lab certification, (2) pilot install with metered export, (3) CSI Division 08 submittal package.',
+      '**Work plan.** (1) NFRC/ASTM lab certification, (2) pilot install with metered export, (3) CSI Division 08 submittal package for Solastrata™.',
       '',
       '*Offline draft — refine with Gemini/Grok for full MTI section formatting.*',
     ].join('\n');
@@ -179,7 +180,7 @@ export function offlineAdvisorReply(userMessage: string, ctx: SimulationContext)
     return [
       '## Manufacturer NDA Pitch Outline',
       '',
-      '**One-liner.** Aegis Sash is a buildable BIPV-T window stack with digital-twin-validated NFRC/DP metrics.',
+      '**One-liner.** Solastrata™ is a buildable BIPV-T window stack with digital-twin-validated NFRC/DP metrics.',
       '',
       '**Why partner now**',
       '- **Performance:** η_el ' +
@@ -198,14 +199,14 @@ export function offlineAdvisorReply(userMessage: string, ctx: SimulationContext)
         (ctx.dp105Ok ? 'OK' : 'in review'),
       '- **Frame:** ' + ctx.frameMaterialName + ' · **Commercial:** payback ~' + ctx.simplePaybackYears + ' yr',
       '',
-      '**Ask.** Mutual NDA → BOM cost share → pilot SKU under private-label or JV.',
+      '**Ask.** Mutual NDA → BOM cost share → pilot SKU under private-label or JV for Solastrata™ BIPV-T Active Glazing Systems.',
       '',
       '*Offline outline — cloud models can expand legal/commercial language.*',
     ].join('\n');
   }
 
   return [
-    '## Aegis Sash Advisor (offline)',
+    '## Solastrata™ Advisor (offline)',
     '',
     'I received: *"' + userMessage.slice(0, 200) + (userMessage.length > 200 ? '…' : '') + '"*',
     '',
@@ -372,9 +373,9 @@ export async function chatWithProvider(
 
 export const QUICK_PROMPTS = {
   compliance:
-    'Audit ASTM E1300 & NFRC Compliance for the active Aegis Sash configuration. Summarize pass/fail and concrete remediation steps.',
+    'Audit ASTM E1300 & NFRC Compliance for the active Solastrata™ configuration. Summarize pass/fail and concrete remediation steps.',
   grant:
-    'Draft an MTI grant proposal narrative section using the injected simulation metrics. Keep it professional and fundable.',
+    'Draft an MTI grant proposal narrative section for Solastrata™ BIPV-T Active Glazing Systems using the injected simulation metrics. Keep it professional and fundable.',
   nda:
-    'Generate a manufacturer NDA pitch outline for a private-label or JV partnership based on the live twin data.',
+    'Generate a manufacturer NDA pitch outline for Solastrata™ private-label or JV partnership based on the live twin data.',
 } as const;
