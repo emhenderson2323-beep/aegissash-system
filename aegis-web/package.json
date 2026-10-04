@@ -1,9 +1,9 @@
 {
   "name": "solastrata-system",
   "private": true,
-  "version": "91.0.0",
+  "version": "92.0.0",
   "type": "module",
-  "description": "Solastrata™ BIPV-T Active Glazing Systems — Digital Twin & Structural Fenestration Engine",
+  "description": "Solastrata™ BIPV-T Active Glazing Systems — Digital Twin & Structural Fenestration Engine with full 3D/4D material & process visualization",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -12,11 +12,15 @@
   },
   "dependencies": {
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "three": "^0.170.0",
+    "@react-three/fiber": "^8.17.10",
+    "@react-three/drei": "^9.117.3"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/three": "^0.170.0",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.6.3",
     "vite": "^5.4.10"
