@@ -1,0 +1,439 @@
+{
+  "schema_version": "1.0.0",
+  "product": "Solastrata™ BIPV-T Active Glazing Systems",
+  "prototype": {
+    "width_in": 36,
+    "height_in": 60,
+    "width_m": 0.914,
+    "height_m": 1.524,
+    "area_m2": 1.393,
+    "area_sqft": 15.0,
+    "label": "3′ × 5′ (36″ × 60″) prototype"
+  },
+  "components": [
+    {
+      "id": "glass_outer_lite_lowiron_2mm",
+      "name": "Outer Lite – Low-Iron Tempered Float Glass",
+      "category": "glazing",
+      "specs": {
+        "weight_grams": 4150,
+        "dimensions_mm": { "w": 914, "h": 1524, "t": 2.0 },
+        "material_grade": "Low-iron tempered float",
+        "thermal_conductivity": 1.05,
+        "electrical_rating": null,
+        "density_kg_m3": 2500,
+        "supplier": "Guardian / Vitro"
+      },
+      "mesh_path": "/Content/Models/Glazing/SM_OuterLite_2mm.fbx",
+      "material_parameters": {
+        "base_color_hex": "#E8F4FC",
+        "roughness": 0.08,
+        "metallic": 0.02,
+        "index_of_refraction": 1.52,
+        "opacity": 0.35,
+        "transmission": 0.88
+      }
+    },
+    {
+      "id": "glass_inner_lite_lowiron_2mm",
+      "name": "Inner Lite – Low-Iron Tempered Float Glass",
+      "category": "glazing",
+      "specs": {
+        "weight_grams": 4150,
+        "dimensions_mm": { "w": 914, "h": 1524, "t": 2.0 },
+        "material_grade": "Low-iron tempered float",
+        "thermal_conductivity": 1.05,
+        "electrical_rating": null,
+        "density_kg_m3": 2500,
+        "supplier": "Guardian / Vitro"
+      },
+      "mesh_path": "/Content/Models/Glazing/SM_InnerLite_2mm.fbx",
+      "material_parameters": {
+        "base_color_hex": "#E8F4FC",
+        "roughness": 0.08,
+        "metallic": 0.02,
+        "index_of_refraction": 1.52,
+        "opacity": 0.35,
+        "transmission": 0.88
+      }
+    },
+    {
+      "id": "core_zeonex_480r_4mm",
+      "name": "Optical Waveguide Core – Zeonex 480R",
+      "category": "glazing",
+      "specs": {
+        "weight_grams": 1390,
+        "dimensions_mm": { "w": 914, "h": 1524, "t": 4.0 },
+        "material_grade": "Zeonex 480R",
+        "thermal_conductivity": 0.14,
+        "electrical_rating": null,
+        "density_kg_m3": 1010,
+        "refractive_index": 1.53,
+        "supplier": "Zeon Corp"
+      },
+      "mesh_path": "/Content/Models/Core/SM_ZeonexCore_4mm.fbx",
+      "material_parameters": {
+        "base_color_hex": "#F5F0E6",
+        "roughness": 0.12,
+        "metallic": 0.0,
+        "index_of_refraction": 1.53,
+        "opacity": 0.55,
+        "transmission": 0.90
+      }
+    },
+    {
+      "id": "dye_lumogen_red_305",
+      "name": "Organic Dye – Lumogen F Red 305",
+      "category": "pv",
+      "specs": {
+        "weight_grams": 0.8,
+        "dimensions_mm": null,
+        "material_grade": "Lumogen F Red 305",
+        "thermal_conductivity": null,
+        "electrical_rating": null,
+        "concentration_ppm": 125,
+        "supplier": "BASF / Sigma-Aldrich"
+      },
+      "mesh_path": null,
+      "material_parameters": {
+        "base_color_hex": "#C41E3A",
+        "roughness": 0.4,
+        "metallic": 0.0,
+        "index_of_refraction": 1.6,
+        "opacity": 0.15,
+        "emission_color_hex": "#FF2A4D",
+        "emission_intensity": 0.35
+      }
+    },
+    {
+      "id": "qd_inp_zns_core_shell",
+      "name": "Core-Shell Quantum Dots – InP/ZnS",
+      "category": "pv",
+      "specs": {
+        "weight_grams": 2.5,
+        "dimensions_mm": null,
+        "material_grade": "InP/ZnS d≈3.2 nm",
+        "thermal_conductivity": null,
+        "electrical_rating": null,
+        "concentration_ppm": 450,
+        "supplier": "NN-Labs / Sigma-Aldrich"
+      },
+      "mesh_path": null,
+      "material_parameters": {
+        "base_color_hex": "#2E8B57",
+        "roughness": 0.35,
+        "metallic": 0.05,
+        "index_of_refraction": 2.5,
+        "opacity": 0.20,
+        "emission_color_hex": "#39FF14",
+        "emission_intensity": 0.45
+      }
+    },
+    {
+      "id": "oca_upper_3m_8146",
+      "name": "Upper Optical Clear Adhesive – 3M 8146",
+      "category": "sealant",
+      "specs": {
+        "weight_grams": 550,
+        "dimensions_mm": { "w": 914, "h": 1524, "t": 0.5 },
+        "material_grade": "3M 8146 OCA (CTE-tuned)",
+        "thermal_conductivity": 0.18,
+        "electrical_rating": null,
+        "modulus_gpa": 1.2,
+        "supplier": "Ellsworth Adhesives"
+      },
+      "mesh_path": "/Content/Models/Interlayer/SM_OCA_Upper_0p5mm.fbx",
+      "material_parameters": {
+        "base_color_hex": "#FFF8E7",
+        "roughness": 0.25,
+        "metallic": 0.0,
+        "index_of_refraction": 1.48,
+        "opacity": 0.40,
+        "transmission": 0.92
+      }
+    },
+    {
+      "id": "oca_lower_3m_8146",
+      "name": "Lower Optical Clear Adhesive – 3M 8146",
+      "category": "sealant",
+      "specs": {
+        "weight_grams": 550,
+        "dimensions_mm": { "w": 914, "h": 1524, "t": 0.5 },
+        "material_grade": "3M 8146 OCA (CTE-tuned)",
+        "thermal_conductivity": 0.18,
+        "electrical_rating": null,
+        "modulus_gpa": 1.2,
+        "supplier": "Ellsworth Adhesives"
+      },
+      "mesh_path": "/Content/Models/Interlayer/SM_OCA_Lower_0p5mm.fbx",
+      "material_parameters": {
+        "base_color_hex": "#FFF8E7",
+        "roughness": 0.25,
+        "metallic": 0.0,
+        "index_of_refraction": 1.48,
+        "opacity": 0.40,
+        "transmission": 0.92
+      }
+    },
+    {
+      "id": "barrier_ald_aln_sio2_35nm",
+      "name": "ALD Barrier – AlN/SiO₂ Multi-Layer",
+      "category": "glazing",
+      "specs": {
+        "weight_grams": 0.15,
+        "dimensions_mm": { "w": 914, "h": 1524, "t": 0.000035 },
+        "material_grade": "Multi-layer ALD AlN/SiO₂",
+        "thermal_conductivity": 30.0,
+        "electrical_rating": null,
+        "wvtr": 1e-6,
+        "supplier": "Beneq / Picosun"
+      },
+      "mesh_path": "/Content/Models/Barrier/SM_ALD_Barrier_35nm.fbx",
+      "material_parameters": {
+        "base_color_hex": "#D0E0F0",
+        "roughness": 0.05,
+        "metallic": 0.15,
+        "index_of_refraction": 1.8,
+        "opacity": 0.15,
+        "transmission": 0.95
+      }
+    },
+    {
+      "id": "coating_fluoropolymer_hydrophobic",
+      "name": "Hydrophobic Fluoropolymer Surface Coat",
+      "category": "glazing",
+      "specs": {
+        "weight_grams": 45,
+        "dimensions_mm": { "w": 914, "h": 1524, "t": 0.05 },
+        "material_grade": "Fluoropolymer",
+        "thermal_conductivity": 0.25,
+        "electrical_rating": null,
+        "supplier": "PPG / specialty"
+      },
+      "mesh_path": "/Content/Models/Coatings/SM_Fluoropolymer_0p05mm.fbx",
+      "material_parameters": {
+        "base_color_hex": "#F0F8FF",
+        "roughness": 0.03,
+        "metallic": 0.0,
+        "index_of_refraction": 1.35,
+        "opacity": 0.20,
+        "transmission": 0.97
+      }
+    },
+    {
+      "id": "pv_edge_gaas_strips",
+      "name": "Edge Photovoltaic Strips – GaAs",
+      "category": "pv",
+      "specs": {
+        "weight_grams": 85,
+        "dimensions_mm": { "perimeter_m": 4.3, "width_mm": 12, "thickness_mm": 0.35 },
+        "material_grade": "GaAs high-efficiency strips",
+        "thermal_conductivity": 55,
+        "electrical_rating": { "efficiency": 0.28, "voc_v": 1.0, "max_current_a": 10 },
+        "supplier": "Specialty GaAs vendors"
+      },
+      "mesh_path": "/Content/Models/PV/SM_GaAs_EdgeStrips.fbx",
+      "material_parameters": {
+        "base_color_hex": "#1A1A2E",
+        "roughness": 0.30,
+        "metallic": 0.65,
+        "index_of_refraction": 3.3,
+        "opacity": 0.95,
+        "emission_color_hex": "#0044FF",
+        "emission_intensity": 0.15
+      }
+    },
+    {
+      "id": "hydronic_copper_tube_1_4in",
+      "name": "Hydronic Cooling Loop – 1/4″ Copper Tube",
+      "category": "thermal",
+      "specs": {
+        "weight_grams": 620,
+        "dimensions_mm": { "od_mm": 6.35, "id_mm": 4.65, "length_m": 4.5 },
+        "material_grade": "C12200 soft copper",
+        "thermal_conductivity": 401,
+        "electrical_rating": null,
+        "pressure_rating_psi": 30,
+        "supplier": "McMaster-Carr"
+      },
+      "mesh_path": "/Content/Models/Hydronic/SM_CopperLoop_1_4in.fbx",
+      "material_parameters": {
+        "base_color_hex": "#B87333",
+        "roughness": 0.35,
+        "metallic": 0.95,
+        "index_of_refraction": 1.0,
+        "opacity": 1.0
+      }
+    },
+    {
+      "id": "coolant_pg_water_40_60",
+      "name": "Coolant – 40/60 Propylene Glycol–Water",
+      "category": "thermal",
+      "specs": {
+        "weight_grams": 260,
+        "dimensions_mm": null,
+        "material_grade": "40/60 PG-Water",
+        "thermal_conductivity": 0.45,
+        "electrical_rating": null,
+        "volume_l": 0.25,
+        "supplier": "McMaster-Carr"
+      },
+      "mesh_path": null,
+      "material_parameters": {
+        "base_color_hex": "#4FC3F7",
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "index_of_refraction": 1.38,
+        "opacity": 0.55,
+        "transmission": 0.85
+      }
+    },
+    {
+      "id": "bus_16awg_ptfe",
+      "name": "Primary DC Bus – 16 AWG PTFE",
+      "category": "hardware",
+      "specs": {
+        "weight_grams": 45,
+        "dimensions_mm": { "length_m": 3.05 },
+        "material_grade": "16 AWG stranded Cu + 600 V PTFE",
+        "thermal_conductivity": null,
+        "electrical_rating": { "voltage_v": 600, "max_current_a": 10 },
+        "supplier": "Digi-Key"
+      },
+      "mesh_path": "/Content/Models/Electrical/SM_16AWG_PTFE_Bus.fbx",
+      "material_parameters": {
+        "base_color_hex": "#FF4500",
+        "roughness": 0.4,
+        "metallic": 0.1,
+        "index_of_refraction": 1.4,
+        "opacity": 1.0
+      }
+    },
+    {
+      "id": "ribbon_busbar_2mm_cu",
+      "name": "Ribbon Busbar – 2.0 mm Tinned Copper",
+      "category": "hardware",
+      "specs": {
+        "weight_grams": 95,
+        "dimensions_mm": { "width_mm": 2.0, "length_m": 4.5 },
+        "material_grade": "Tinned copper ribbon",
+        "thermal_conductivity": 385,
+        "electrical_rating": { "max_current_a": 10 },
+        "supplier": "Digi-Key"
+      },
+      "mesh_path": "/Content/Models/Electrical/SM_RibbonBusbar_2mm.fbx",
+      "material_parameters": {
+        "base_color_hex": "#D4AF37",
+        "roughness": 0.25,
+        "metallic": 0.98,
+        "index_of_refraction": 1.0,
+        "opacity": 1.0
+      }
+    },
+    {
+      "id": "inverter_buckboost_pcb",
+      "name": "Buck-Boost Microinverter PCB",
+      "category": "hardware",
+      "specs": {
+        "weight_grams": 48,
+        "dimensions_mm": { "w": 120, "h": 25, "t": 12 },
+        "material_grade": "FR4 + potting",
+        "thermal_conductivity": null,
+        "electrical_rating": { "topology": "Buck-Boost DC-DC", "ip_rating": "IP67", "max_current_a": 10 },
+        "supplier": "JLCPCB / PCBWay"
+      },
+      "mesh_path": "/Content/Models/Electrical/SM_BuckBoost_PCB_120x25x12.fbx",
+      "material_parameters": {
+        "base_color_hex": "#1B5E20",
+        "roughness": 0.45,
+        "metallic": 0.15,
+        "index_of_refraction": 1.5,
+        "opacity": 1.0
+      }
+    },
+    {
+      "id": "connectors_ip67_mc4",
+      "name": "IP67 Quick-Connect Plugs + 10 A Fuse",
+      "category": "hardware",
+      "specs": {
+        "weight_grams": 65,
+        "dimensions_mm": null,
+        "material_grade": "IP67 MC4-style + inline 10 A DC fuse",
+        "thermal_conductivity": null,
+        "electrical_rating": { "ip_rating": "IP67", "max_current_a": 10 },
+        "supplier": "Digi-Key"
+      },
+      "mesh_path": "/Content/Models/Electrical/SM_IP67_Connectors.fbx",
+      "material_parameters": {
+        "base_color_hex": "#212121",
+        "roughness": 0.5,
+        "metallic": 0.2,
+        "index_of_refraction": 1.5,
+        "opacity": 1.0
+      }
+    },
+    {
+      "id": "frame_dual_cavity_thermal_break",
+      "name": "Dual-Cavity Aluminum Frame with Thermal Break",
+      "category": "framing",
+      "specs": {
+        "weight_grams": 2850,
+        "dimensions_mm": { "depth_mm": 45, "thermal_break_mm": 18 },
+        "material_grade": "Aluminum extrusion + polyamide thermal break",
+        "thermal_conductivity": 0.25,
+        "electrical_rating": null,
+        "supplier": "Kawneer / YKK"
+      },
+      "mesh_path": "/Content/Models/Frames/SM_DualCavity_ThermalBreak.fbx",
+      "material_parameters": {
+        "base_color_hex": "#8A9BA8",
+        "roughness": 0.28,
+        "metallic": 0.85,
+        "index_of_refraction": 1.0,
+        "opacity": 1.0
+      }
+    },
+    {
+      "id": "sealant_structural_silicone",
+      "name": "Structural Silicone Perimeter Sealant",
+      "category": "sealant",
+      "specs": {
+        "weight_grams": 180,
+        "dimensions_mm": null,
+        "material_grade": "Structural silicone",
+        "thermal_conductivity": 0.2,
+        "electrical_rating": null,
+        "supplier": "Dow / Tremco"
+      },
+      "mesh_path": "/Content/Models/Sealant/SM_StructuralSilicone_Bead.fbx",
+      "material_parameters": {
+        "base_color_hex": "#2F2F2F",
+        "roughness": 0.55,
+        "metallic": 0.0,
+        "index_of_refraction": 1.4,
+        "opacity": 1.0
+      }
+    },
+    {
+      "id": "potting_epoxy_thermal_ip67",
+      "name": "Thermally Conductive Epoxy Potting – IP67",
+      "category": "sealant",
+      "specs": {
+        "weight_grams": 50,
+        "dimensions_mm": null,
+        "material_grade": "Thermal epoxy IP67",
+        "thermal_conductivity": 1.8,
+        "electrical_rating": null,
+        "supplier": "Ellsworth / 3M"
+      },
+      "mesh_path": null,
+      "material_parameters": {
+        "base_color_hex": "#4A4A4A",
+        "roughness": 0.6,
+        "metallic": 0.0,
+        "index_of_refraction": 1.5,
+        "opacity": 1.0
+      }
+    }
+  ]
+}
