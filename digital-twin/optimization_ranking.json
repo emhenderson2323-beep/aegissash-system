@@ -1,0 +1,22 @@
+{
+  "objective": "maximize W/m2 then minimize cost",
+  "constraints": {"vlt_min": 45, "u_max": 0.85},
+  "live_simulator_baseline_wm2": 54.1,
+  "total_evaluated": 504,
+  "top_3_near_commercial": [
+    {"power_wm2": 80.8, "eta_pct": 8.08, "cost_sqft": 90, "u_factor": 0.79, "vlt_pct": 56, "label": "PMMA/PerovskiteSi_2T/multi_qd_perp/Argon/5.0mm", "maturity": "near-commercial"},
+    {"power_wm2": 80.8, "eta_pct": 8.08, "cost_sqft": 90, "u_factor": 0.79, "vlt_pct": 56, "label": "Polycarbonate/PerovskiteSi_2T/multi_qd_perp/Argon/4.0mm", "maturity": "near-commercial"},
+    {"power_wm2": 80.8, "eta_pct": 8.08, "cost_sqft": 91, "u_factor": 0.76, "vlt_pct": 59, "label": "Zeonex/PerovskiteSi_2T/multi_dye/Argon/4.0mm", "maturity": "near-commercial"}
+  ],
+  "top_3_overall_including_research": [
+    {"power_wm2": 85.1, "eta_pct": 8.51, "cost_sqft": 98, "label": "Polycarbonate/PerovskiteGaAs/multi_qd_perp/Argon/4.0mm", "maturity": "research"},
+    {"power_wm2": 85.1, "eta_pct": 8.51, "cost_sqft": 99, "label": "PMMA/PerovskiteGaAs/multi_qd_perp/Argon/5.0mm", "maturity": "research"},
+    {"power_wm2": 85.1, "eta_pct": 8.51, "cost_sqft": 100, "label": "Zeonex/PerovskiteGaAs/multi_dye/Argon/4.0mm", "maturity": "research"}
+  ],
+  "house_coverage_250sqft_windows": {
+    "current_simulator_pct_of_10500kwh": 9,
+    "best_near_commercial_pct": 13,
+    "best_research_pct": 14,
+    "note": "Pair with rooftop solar for full house + battery + grid export"
+  }
+}
